@@ -1,6 +1,6 @@
 architecture: standalone
 auth:
   enabled: true
-  password: test-password
+  password: "###ZARF_VAR_VALKEY_PASSWORD###"
 persistence:
   enabled: true

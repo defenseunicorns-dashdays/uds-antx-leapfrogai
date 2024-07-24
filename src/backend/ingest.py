@@ -1,19 +1,27 @@
 import pandas as pd
 import numpy as np
 import os
+import time
 import argparse
-from comms.valkey import get_processed_files()
+from comms.valkey import get_processed_files
 from comms.s3 import get_objects
-from util.logs import get_logger, setup_logging()
+from util.logs import get_logger, setup_logging
 
 log = get_logger()
 
-def get_files_to_process(prefix=""):
+def get_valkey_keys(prefix):
+   return {
+      'files_key': f'{prefix}_processed_files',
+      'output_key': f'{prefix}_output'
+           }
+
+def get_files_to_process(file_key, prefix=""):
    """Returns a list of files to process
+      :param file_key: key in valkey where the processed files are stored
       :param prefix: Checks for new files that begin with prefix
       :returns: List of file keys in s3
    """
-   processed_files = get_processed_files()
+   processed_files = get_processed_files(file_key)
    file_list = get_objects(prefix)
    to_process = []
    for filename in file_list:
@@ -22,6 +30,9 @@ def get_files_to_process(prefix=""):
    return to_process
 
 def ingest_data(bucket, prefix, test):
+   log.info(f'Process starting')
+   time.sleep(120)
+   log.info(f'Process ended')
    raise NotImplementedError
 
 if __name__ == '__main__':
@@ -33,4 +44,3 @@ if __name__ == '__main__':
                        help='Upload fake testing data')
    args = parser.parse_args()
    ingest_data(args.bucket, args.prefix, args.test)
-

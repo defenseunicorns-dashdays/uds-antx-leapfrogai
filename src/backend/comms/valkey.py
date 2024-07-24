@@ -34,12 +34,24 @@ def get_valkey_connection():
          return create_valkey_connection()
       return VALKEY_ENGINE
    
+def wipe_key(key):
+   r = get_valkey_connection()
+   r.delete(key)
+
+def publish_message(channel, data):
+   r = get_valkey_connection()
+   r.publish(channel, json.dumps(data))
+   
 def get_output_frame(key):
    """Retrieves the output Pandas.DataFrame from key
       :param key: Key in valkey for the DataFrame
    """
    r = get_valkey_connection()
-   df = pd.read_json(StringIO(r.get(key).decode('utf-8')))
+   data = r.get(key)
+   if data is None:
+      log.warn(f'{key} does not exist in valkey')
+      return None
+   df = pd.read_json(StringIO(data.decode('utf-8')))
    return df
 
 def set_output_frame(key, df):
@@ -58,7 +70,11 @@ def get_processed_files(key):
       :returns: list of string (object keys) in s3
    """
    r = get_valkey_connection()
-   files = list(json.loads(r.get(key)))
+   data = r.get(key)
+   if data is None:
+      log.warn(f'{key} does not exist in valkey')
+      return None
+   files = list(json.loads(data))
    return files
 
 def set_processed_files(key, files):

@@ -4,8 +4,14 @@ metadata:
   description: Templated deployment of Antx backend
   version: 0.0.1
 variables:
-  - name: REDIS_PASSWORD
+  - name: VALKEY_PASSWORD
     description: The user to access the argo database in postgres
+    prompt: true
+  - name: VALKEY_HOST
+    description: endpoint to reach valkey
+    prompt: true
+  - name: VALKEY_PORT
+    description: port to communicate with valkey
     prompt: true
   - name: S3_ENDPOINT
     description: 'Endpoint to use to connect to S3. Example: "s3.amazonaws.com" or "minio.bigbang.dev"'

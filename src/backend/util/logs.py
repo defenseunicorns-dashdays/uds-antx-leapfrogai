@@ -26,7 +26,7 @@ def setup_logging():
       'formatters': {
          # Modify log message format here or replace with your custom formatter class
          'my_formatter': {
-            'format': '[%(asctime)s] %(levelname)s [%(filename)s.%(funcName)s:%(lineno)d] | %(message)s',
+            'format': '[%(asctime)s] %(levelname)s pid:%(process)d [%(filename)s.%(funcName)s:%(lineno)d] | %(message)s',
             'datefmt': '%a, %d %b %Y %H:%M:%S'
          }
       },

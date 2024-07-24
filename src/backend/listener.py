@@ -1,8 +1,10 @@
-from antx.src.backend.comms.valkey import get_valkey_connection
+from comms.valkey import wipe_key, get_valkey_connection
 from util.logs import get_logger, setup_logging
 import os
 import json
 import traceback
+from subprocess import Popen
+from ingest import get_valkey_keys
 
 log = get_logger()
 
@@ -10,21 +12,74 @@ class Listener:
    def __init__(self):
       self.r = get_valkey_connection()
       self.sub_channel = os.environ.get('SUB_CHANNEL', 'events')
-      self.processes = []
+      self.processes = {}
 
    def start_ingestion(self, data):
-      raise NotImplementedError
+      key_prefix = data['prefix']
+      bucket = data['bucket']
+      if key_prefix in self.processes:
+         log.warning(f'Attempting to start proccess that already exists:')
+         proc = self.processes[key_prefix]
+         code = proc.poll()
+         if code is None:
+            log.warning(f'Process is running...')
+         else:
+            log.warning(f'Process exited with code: {code}, use a resume message to resume')
+      else:
+         cmd = ["python3", "ingest.py", bucket, key_prefix]
+         if "test" in data:
+            cmd.append("-t")
+         log.info(f'Creating process with command: {cmd}')
+         self.processes[key_prefix] = Popen(cmd)
+
+   def resume_ingestion(self, data):
+      key_prefix = data['prefix']
+      bucket = data['bucket']
+      if key_prefix not in self.processes:
+         log.warning(f'{key_prefix} Not found in processes, use a start message to start')
+      else:
+         proc = self.processes[key_prefix]
+         code = proc.poll()
+         if code is None:
+            log.warning(f'{key_prefix} Subprocess is still running, use an end message to stop')
+         else:
+            cmd = ["python3", "ingest.py", bucket, key_prefix]
+            if "test" in data:
+               cmd.append("-t")
+            log.info(f'Creating process with command: {cmd}')
+            self.processes[key_prefix] = Popen(cmd)
    
    def end_ingestion(self, data):
-      raise NotImplementedError
+      key_prefix = data['prefix']
+      if key_prefix not in self.processes:
+         log.warning(f'{key_prefix} is not associated with a process')
+      else:
+         proc = self.processes[key_prefix]
+         code = proc.poll()
+         if code is not None:
+            log.warning(f'{key_prefix} Process exited with code {code}. Use a start message to restart')
+         else:
+            log.info(f'Killing process associated with key: {key_prefix}')
+            proc.kill()
+            del self.processes[key_prefix]
+
+   def wipe_data(self, data):
+      key_prefix = data['prefix']
+      redis_keys = get_valkey_keys(key_prefix)
+      for k, v in redis_keys.items():
+         wipe_key(v)
 
    def process_message(self, data):
       data = json.loads(data)
       msg_type = data['message_type']
       if msg_type == 'start':
          self.start_ingestion(data)
+      elif msg_type == 'resume':
+         self.resume_ingestion(data)
       elif msg_type == 'end':
          self.end_ingestion(data)
+      elif msg_type == 'wipe':
+         self.wipe_data(data)
       else:
          log.warn(f'Could not process message: {data}')
 
@@ -43,7 +98,6 @@ class Listener:
                log.warning(traceback.format_exc())
          else:
             log.info(f'Non-message received: {message}')
-
 
 if __name__ == '__main__':
    setup_logging()
