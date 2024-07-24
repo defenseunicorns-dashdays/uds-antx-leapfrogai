@@ -57,7 +57,7 @@ class Listener:
          proc = self.processes[key_prefix]
          code = proc.poll()
          if code is not None:
-            log.warning(f'{key_prefix} Process exited with code {code}. Use a start message to restart')
+            log.warning(f'{key_prefix} Process exited with code {code}. Use a resume message to restart')
          else:
             log.info(f'Killing process associated with key: {key_prefix}')
             proc.kill()
