@@ -66,7 +66,7 @@ def push_data(data, metrics, valkeys):
          "track4": v.get("track4", ""),
          "state": v["state"],
          "notes": "",
-         "delay type": data.get("delay_type", ""),
+         "delay type": data.get("delay_reason", ""),
          "predicted_state": data["predicted_state"],
          "time_to_change": data["time_to_change"]
       }
