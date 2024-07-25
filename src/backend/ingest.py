@@ -63,7 +63,7 @@ def setup_ingestion(prefix):
    return data_dir
 
 def get_audio_metadata(key):
-   return pd.Timestamp('now').str
+   
 
 def ingest_file(key: str,
                 valkey_keys: dict,

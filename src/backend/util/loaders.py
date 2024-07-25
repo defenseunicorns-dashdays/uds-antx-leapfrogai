@@ -73,6 +73,12 @@ def push_data(data, metrics, valkeys):
       append_row(valkeys['output_key'], push_data)
    push_metrics(metrics, valkeys["metrics_key"])
 
+def test_update(run_id):
+   to_push = {}
+   for i in range(3):
+      push
+
+
 def format_timediff(seconds):
    fmt_seconds = seconds % 60
    minutes = seconds // 60

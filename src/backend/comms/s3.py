@@ -15,6 +15,7 @@ def get_s3_client():
    access_key = os.environ.get('S3_ACCESS_KEY', "test-user")
    secret_key = os.environ.get('S3_SECRET_KEY', "test-secret")
    return boto3.client('s3', endpoint_url=ENDPOINT,
+                       region_name=REGION,
                        aws_access_key_id=access_key,
                        aws_secret_access_key=secret_key)
 
