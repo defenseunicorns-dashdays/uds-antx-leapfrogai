@@ -14,6 +14,11 @@ class Listener:
       self.sub_channel = os.environ.get('SUB_CHANNEL', 'events')
       self.processes = {}
 
+   def spawn_process(self, bucket, key_prefix, run_id):
+      cmd = ["python3", "ingest.py", bucket, key_prefix, run_id]
+      log.info(f'Creating process with command: {cmd}')
+      self.processes[key_prefix] = Popen(cmd)
+
    def start_ingestion(self, data):
       key_prefix = data['prefix']
       bucket = data['bucket']
@@ -26,9 +31,7 @@ class Listener:
          else:
             log.warning(f'Process exited with code: {code}, use a resume message to resume')
       else:
-         cmd = ["python3", "ingest.py", bucket, key_prefix]
-         log.info(f'Creating process with command: {cmd}')
-         self.processes[key_prefix] = Popen(cmd)
+         self.spawn_process(bucket, key_prefix, new_id=True)
 
    def resume_ingestion(self, data):
       key_prefix = data['prefix']
@@ -41,9 +44,7 @@ class Listener:
          if code is None:
             log.warning(f'{key_prefix} Subprocess is still running, use an end message to stop')
          else:
-            cmd = ["python3", "ingest.py", bucket, key_prefix]
-            log.info(f'Creating process with command: {cmd}')
-            self.processes[key_prefix] = Popen(cmd)
+            self.spawn_process(bucket, key_prefix, new_id=False)
    
    def end_ingestion(self, data):
       key_prefix = data['prefix']

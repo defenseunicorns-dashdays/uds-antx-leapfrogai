@@ -20,6 +20,7 @@ def dummy_transcribe(file_path):
    return res, t2-t1
 
 def dummy_inference(current_state):
+   t1 = time.time()
    data = {}
    seconds_to_next_event = random.randint(0, 120)
    formatted_time_to_change = format_timediff(seconds_to_next_event)
@@ -29,6 +30,8 @@ def dummy_inference(current_state):
    if current_state == 'Delay Start':
       data['delay_reason'] = random.choice(list(DelayReason)).value
       data['delay_resolution'] = formatted_time_to_change
+   data['seconds'] = time.time() - t1
+   return data
 
 def build_transcribe_request(file_path, response_type='json', segmentation=[]):
    raise NotImplementedError

@@ -24,7 +24,12 @@ def get_objects(prefix="", bucket=BUCKET):
       :returns: List of file keys in the bucket
    """
    s3 = get_s3_client()
-   response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+   try:
+      response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+   except Exception as e:
+      log.warning(f'Error listing objects in {bucket}: {e}')
+      log.warnging(traceback.format_exc())
+      return None
    if 'Contents' not in response:
       return []
    file_list = [x['Key'] for x in response['Contents']]

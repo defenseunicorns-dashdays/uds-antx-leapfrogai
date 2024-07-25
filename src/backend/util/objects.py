@@ -55,6 +55,7 @@ class Update(BaseModel):
 class LastUpdate(BaseModel):
    updateTime: str = Field(description = "YYYY-MM-DDTHH:MM:SS datetime format", examples=['2024-04-01T17:32:47'])
    lastState: State = Field(description="The current state")
+   runID: str = Field(description="the run_id of the run to show data for")
 
 class MetricTracker:
    def __init__(self):

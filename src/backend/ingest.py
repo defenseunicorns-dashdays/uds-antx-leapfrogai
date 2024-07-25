@@ -5,7 +5,7 @@ import time
 import traceback
 import argparse
 import pandas as pd
-from comms.valkey import get_processed_files, publish_message
+from comms.valkey import get_json_data, set_json_data, publish_message
 from comms.s3 import get_objects, copy_from_s3
 from comms.lfai import transcribe, inference
 from util.logs import get_logger, setup_logging
@@ -16,7 +16,7 @@ from pathlib import Path
 log = get_logger()
 
 MESSAGE_CHANNEL = os.environ.get('SUB_CHANNEL', 'events')
-STALLED = 50
+STALLED = 300
 
 def get_valkey_keys(prefix, run_id):
    return {
@@ -32,7 +32,7 @@ def get_files_to_process(file_key, bucket, prefix=""):
       :param prefix: Checks for new files that begin with prefix
       :returns: List of file keys in s3
    """
-   processed_files = get_processed_files(file_key)
+   processed_files = get_json_data(file_key)
    file_list = get_objects(prefix, bucket)
    to_process = []
    for filename in file_list:
@@ -53,6 +53,10 @@ def send_sos(prefix, bucket, trc, restart):
    publish_message(MESSAGE_CHANNEL, data)
 
 def setup_ingestion(prefix):
+   """Creates the tmp directory to download files from s3
+      :param prefix: s3 prefix where the files are uploaded
+      :returns: string path to the tmp folder
+   """
    data_dir = os.environ.get('DATA_DIR', '/tmp/data/')
    data_dir += prefix.replace('/', '_')
    Path(data_dir).mkdir(parents=True, exist_ok=True)
@@ -79,7 +83,7 @@ def ingest_file(key: str,
    data['start_time'] = start_time
    data['track'] = track
    metrics.update_inferences(data['seconds'])
-   push_data(txt, data, valkey_keys)
+   push_data(txt, data, metrics, valkey_keys)
    os.remove(new_path)
 
 def ingest_loop(bucket, prefix, valkey_keys, data_dir):
@@ -94,20 +98,22 @@ def ingest_loop(bucket, prefix, valkey_keys, data_dir):
          time.sleep(20)
          continue
       num_no_updates = 0
-      processed_files = get_processed_files(files_key)
+      processed_files = get_json_data(files_key)
       for key in files:
          metrics = ingest_file(key, valkey_keys, data_dir,
                               metrics, bucket)
+         processed_files.append(key)
+         set_json_data(files_key, processed_files)
       time.sleep(20)
 
 def cleanup(data_dir):
    if os.path.exists(data_dir):
       shutil.rmtree(data_dir)
 
-def ingest_data(bucket, prefix):
+def ingest_data(bucket, prefix, run_id):
    #setup
    try:
-      valkey_keys = get_valkey_keys(prefix)
+      valkey_keys = get_valkey_keys(prefix, run_id)
       data_dir = setup_ingestion(prefix)
       init_outputs(valkey_keys, prefix)
    except Exception as e:
@@ -119,7 +125,7 @@ def ingest_data(bucket, prefix):
 
    #ingestion
    try:
-      ingest_loop(bucket, prefix, valkey_keys, data_dir)
+      ingest_loop(bucket, prefix, run_id, valkey_keys, data_dir)
    except Exception as e:
       log.warning(f'Error with ingestion loop: {e}')
       trc = traceback.format_exc()
@@ -134,8 +140,9 @@ def ingest_data(bucket, prefix):
 
 if __name__ == '__main__':
    setup_logging()
-   parser = argparse.ArgumentParser(description="postional args: bucket, prefix")
+   parser = argparse.ArgumentParser(description="postional args: bucket, prefix, run_id")
    parser.add_argument('bucket', help="s3 bucket name")
    parser.add_argument('prefix', help="s3 key prefix to check")
+   parser.add_argument('run_id', help="run_id to help keep data stored separately")
    args = parser.parse_args()
    ingest_data(args.bucket, args.prefix, args.test)

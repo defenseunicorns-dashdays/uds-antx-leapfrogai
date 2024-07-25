@@ -74,24 +74,24 @@ def set_output_frame(key, df):
    r.set(key, df.to_json())
 
 
-def get_processed_files(key):
-   """Restores a list of files processed in the current exercise
-      :param key: Key where the list of files is stored in valkey
-      :returns: list of string (object keys) in s3
+def get_json_data(key):
+   """Gets json data stored in key
+      :param key: Key where the data is stored in valkey
+      :returns: list or dict of json data
    """
    r = get_valkey_connection()
    data = r.get(key)
    if data is None:
       log.warn(f'{key} does not exist in valkey')
       return []
-   files = list(json.loads(data))
-   return files
+   dict_data = list(json.loads(data))
+   return dict_data
 
-def set_processed_files(key, files):
-   """Stores a list of processed file keys @ key in valkey
+def set_json_data(key, data):
+   """Stores json data in key
       :param key: key in valkey to store the list
-      :param files: list of s3 object keys that have been processed
+      :param data: data that can be jsonified into valkey
       :returns: None
    """
    r = get_valkey_connection()
-   r.set(key, json.dumps(files))
+   r.set(key, json.dumps(data))
