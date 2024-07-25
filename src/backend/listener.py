@@ -27,8 +27,6 @@ class Listener:
             log.warning(f'Process exited with code: {code}, use a resume message to resume')
       else:
          cmd = ["python3", "ingest.py", bucket, key_prefix]
-         if "test" in data:
-            cmd.append("-t")
          log.info(f'Creating process with command: {cmd}')
          self.processes[key_prefix] = Popen(cmd)
 
@@ -44,8 +42,6 @@ class Listener:
             log.warning(f'{key_prefix} Subprocess is still running, use an end message to stop')
          else:
             cmd = ["python3", "ingest.py", bucket, key_prefix]
-            if "test" in data:
-               cmd.append("-t")
             log.info(f'Creating process with command: {cmd}')
             self.processes[key_prefix] = Popen(cmd)
    
@@ -78,6 +74,8 @@ class Listener:
          self.resume_ingestion(data)
       elif msg_type == 'end':
          self.end_ingestion(data)
+      elif msg_type == 'error':
+         self.wait_and_resume(data)
       elif msg_type == 'wipe':
          self.wipe_data(data)
       else:
