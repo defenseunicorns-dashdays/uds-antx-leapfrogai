@@ -16,6 +16,7 @@ def dummy_transcribe(file_path):
    t1 = time.time()
    length = random.randint(20, 30)
    res = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+   time.sleep(random.randint(4,7))
    t2 = time.time()
    return res, t2-t1
 
@@ -30,6 +31,7 @@ def dummy_inference(current_state):
    if current_state == 'Delay Start':
       data['delay_reason'] = random.choice(list(DelayReason)).value
       data['delay_resolution'] = formatted_time_to_change
+   time.sleep(random.randint(1, 5))
    data['seconds'] = time.time() - t1
    return data
 

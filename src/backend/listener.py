@@ -22,6 +22,7 @@ class Listener:
    def start_ingestion(self, data):
       key_prefix = data['prefix']
       bucket = data['bucket']
+      run_id = data['run_id']
       if key_prefix in self.processes:
          log.warning(f'Attempting to start proccess that already exists:')
          proc = self.processes[key_prefix]
@@ -31,11 +32,12 @@ class Listener:
          else:
             log.warning(f'Process exited with code: {code}, use a resume message to resume')
       else:
-         self.spawn_process(bucket, key_prefix, new_id=True)
+         self.spawn_process(bucket, key_prefix, run_id)
 
    def resume_ingestion(self, data):
       key_prefix = data['prefix']
       bucket = data['bucket']
+      run_id = data['run_id']
       if key_prefix not in self.processes:
          log.warning(f'{key_prefix} Not found in processes, use a start message to start')
       else:
@@ -44,7 +46,7 @@ class Listener:
          if code is None:
             log.warning(f'{key_prefix} Subprocess is still running, use an end message to stop')
          else:
-            self.spawn_process(bucket, key_prefix, new_id=False)
+            self.spawn_process(bucket, key_prefix, run_id)
    
    def end_ingestion(self, data):
       key_prefix = data['prefix']
