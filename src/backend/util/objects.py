@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from enum import Enum
 
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
 class CurrentState(Enum):
    pre_trial_start = "Pre Trial Start"
    trial_start = "Trial Start"
@@ -81,6 +83,7 @@ class MetricTracker:
          "max" : self.max_infer,
          "avg" : self.avg_infer
       }
+      return data
 
    def update_transcriptions(self, seconds, tokens):
       self.num_tokens += tokens
@@ -99,4 +102,3 @@ class MetricTracker:
       if seconds > self.max_infer:
          self.max_infer = seconds
       self.avg_infer = self.total_infer_time / self.num_inferences
-

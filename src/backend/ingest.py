@@ -4,10 +4,13 @@ import shutil
 import time
 import traceback
 import argparse
+import pandas as pd
 from comms.valkey import get_processed_files, publish_message
-from comms.s3 import get_objects
+from comms.s3 import get_objects, copy_from_s3
+from comms.lfai import transcribe, inference
 from util.logs import get_logger, setup_logging
-from util.loaders import init_outputs, ingest_files
+from util.loaders import init_outputs, push_data, format_timediff
+from util.objects import MetricTracker
 from pathlib import Path
 
 log = get_logger()
@@ -15,11 +18,12 @@ log = get_logger()
 MESSAGE_CHANNEL = os.environ.get('SUB_CHANNEL', 'events')
 STALLED = 50
 
-def get_valkey_keys(prefix):
+def get_valkey_keys(prefix, run_id):
    return {
       'files_key': f'{prefix}_processed_files',
-      'output_key': f'{prefix}_output'
-           }
+      'output_key': f'{run_id}_output',
+      'metrics_key': f'{run_id}_metrics'
+         }
 
 def get_files_to_process(file_key, bucket, prefix=""):
    """Returns a list of files to process
@@ -54,8 +58,33 @@ def setup_ingestion(prefix):
    Path(data_dir).mkdir(parents=True, exist_ok=True)
    return data_dir
 
+def get_audio_metadata(key):
+   return pd.Timestamp('now').str
+
+def ingest_file(key: str,
+                valkey_keys: dict,
+                data_dir: str,
+                metrics: MetricTracker,
+                bucket: str):
+   new_path = data_dir + key.split('/')[-1]
+   success = copy_from_s3(bucket, key, new_path)
+   if not success:
+      log.warning(f'Skipping key {key}: could not copy from s3')
+      return False
+   start_time, track = get_audio_metadata(key)
+   txt, seconds = transcribe(new_path)
+   tokens = len(txt.split(' '))
+   metrics.update_transcriptions(seconds, tokens)
+   data = inference(txt)
+   data['start_time'] = start_time
+   data['track'] = track
+   metrics.update_inferences(data['seconds'])
+   push_data(txt, data, valkey_keys)
+   os.remove(new_path)
+
 def ingest_loop(bucket, prefix, valkey_keys, data_dir):
    num_no_updates = 0
+   metrics = MetricTracker()
    while num_no_updates < STALLED:
       files_key = valkey_keys['files_key']
       output_key = valkey_keys['output_key']
@@ -65,7 +94,10 @@ def ingest_loop(bucket, prefix, valkey_keys, data_dir):
          time.sleep(20)
          continue
       num_no_updates = 0
-      ingest_files(files, files_key, output_key, data_dir)
+      processed_files = get_processed_files(files_key)
+      for key in files:
+         metrics = ingest_file(key, valkey_keys, data_dir,
+                              metrics, bucket)
       time.sleep(20)
 
 def cleanup(data_dir):
