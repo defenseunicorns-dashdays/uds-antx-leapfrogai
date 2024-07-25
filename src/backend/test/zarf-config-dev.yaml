@@ -3,9 +3,11 @@ package:
     set:
       S3_ACCESS_KEY: test-user
       S3_SECRET_KEY: test-secret
-      S3_BUCKET_NAME: antx
+      S3_READ_BUCKET_NAME: antx
+      S3_WRITE_BUCKET_NAME: antx
       S3_ENDPOINT: minio.uds-dev-stack.svc.cluster.local:9000
       VALKEY_PASSWORD: test-password
       VALKEY_HOST: valkey-master.antx.svc.cluster.local
       VALKEY_PORT: 6379
+      LEAPFROG_API_KEY: test-key
       

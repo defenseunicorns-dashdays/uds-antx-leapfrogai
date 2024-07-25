@@ -7,7 +7,8 @@ log = get_logger()
 
 REGION = os.environ.get('S3_REGION', None)
 ENDPOINT = os.environ.get('S3_ENDPOINT', 'http://localhost:9000')
-BUCKET = os.environ.get('S3_BUCKET', 'antx')
+WRITE_BUCKET = os.environ.get('WRITE_BUCKET', 'antx')
+READ_BUCKET = os.environ.get('READ_BUCKET', 'antx')
 
 def get_s3_client():
    """Returns boto3 s3 client from environment variables"""
@@ -17,7 +18,7 @@ def get_s3_client():
                        aws_access_key_id=access_key,
                        aws_secret_access_key=secret_key)
 
-def get_objects(prefix="", bucket=BUCKET):
+def get_objects(prefix="", bucket=READ_BUCKET):
    """Returns a list of keys for objects in a bucket
       :param prefix: Filters the bucket for keys that begin with prefix
       :param bucket: Bucket to return objects of
@@ -35,7 +36,7 @@ def get_objects(prefix="", bucket=BUCKET):
    file_list = [x['Key'] for x in response['Contents']]
    return file_list
 
-def upload_file(file_path, key, bucket=BUCKET):
+def upload_file(file_path, key, bucket=WRITE_BUCKET):
    """Uploads a local file to S3
         :param file_path: S3 bucket name
         :param key: key for file

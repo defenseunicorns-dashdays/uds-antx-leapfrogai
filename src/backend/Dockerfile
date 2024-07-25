@@ -1,24 +1,27 @@
 #TODO: find better base image
-FROM ubuntu:latest
+FROM python:3.12.4
 
-WORKDIR /app/path
+WORKDIR /app
 USER root
 
-RUN mkdir /app/path/comms
-RUN mkdir /tmp/data/
+RUN mkdir /app/comms \
+   && mkdir /app/util
+RUN mkdir /tmp/data/ \
+   && mkdir /tmp/logs/
 
 COPY *.py .
 COPY ./comms/*.py ./comms/
+COPY ./util/*.py ./util/
 COPY requirements.txt .
 
-RUN microdnf update -y && microdnf upgrade -y \
-   && microdnf install vim -y \
-   && microdnf install curl -y \
+RUN apt-get update -y && apt-get upgrade -y \
+   && apt-get install vim -y \
+   && apt-get install curl -y \
    && pip3 install -r requirements.txt
 
-RUN chown -R 1001:1001 /app/path
+RUN chown -R 1001:1001 /app/
 RUN chown -R 1001:1001 /tmp/data/
-RUN chmod 755 /app/path
+RUN chmod 755 /app/
 RUN chmod 755 /tmp/data/
 
 USER 1001

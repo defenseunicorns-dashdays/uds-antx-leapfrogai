@@ -75,7 +75,6 @@ def ingest_file(key: str,
    if not success:
       log.warning(f'Skipping key {key}: could not copy from s3')
       return False
-   start_time, end_time, track = get_audio_metadata(key)
    result = dummy_transcribe(new_path)
    tokens = result['performanceMetrics']['tokens']
    seconds = result['performanceMetrics']['timeToTranscribe']

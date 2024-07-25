@@ -3,7 +3,11 @@ tasks:
     description: brings up everything from scratch (uds-slim-dev included)
     actions:
       - task: uds-up
+      - task: registry-up
+      - task: push-image
       - task: build-package
+      - task: deploy-package
+      - task: registry-down
   - name: down
     description: bring everything down
     actions:
@@ -42,3 +46,17 @@ tasks:
       - cmd: uds zarf package remove zarf-package-antx-backend-*.tar.zst --confirm
       - cmd: rm zarf-config.yaml
       - cmd: rm zarf-package-*.tar.zst
+  - name: registry-up
+    description: Creates a docker registry for local iamge building
+    actions:
+      - cmd: docker run -d -p 5000:5000 --restart=always --name registry registry:2
+  - name: push-image
+    description: Builds and pushes the local image to registry for zarf
+    actions:
+      - cmd: docker build . -t localhost:5000/backend:latest
+      - cmd: docker push localhost:5000/backend:latest
+  - name: registry-down
+    description: kills the docker registry
+    actions:
+      - cmd: docker kill registry
+      - cmd: docker rm registry

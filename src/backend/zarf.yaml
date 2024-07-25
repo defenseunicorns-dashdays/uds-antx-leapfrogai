@@ -1,4 +1,4 @@
-ind: ZarfPackageConfig
+kind: ZarfPackageConfig
 metadata:
   name: antx-backend
   description: Templated deployment of Antx backend
@@ -33,6 +33,10 @@ variables:
     description: The Secret key for the S3 service
     prompt: true
     sensitive: true
+  - name: LEAPFROG_API_KEY
+    description: API key for auth beaerer header
+    prompt: true
+    sensitive: true
 components:
   - name: antx-setup
     required: true
@@ -52,3 +56,11 @@ components:
           - values/valkey.yaml
     images:
       - bitnami/valkey:7.2.5-debian-12-r7
+  - name: backend
+    required: true
+    manifests:
+      - name: api
+        files:
+          - manifests/api.yaml
+    images:
+      - localhost:5000/backend:latest
