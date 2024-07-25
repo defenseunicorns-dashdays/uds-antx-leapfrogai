@@ -67,9 +67,10 @@ def ingest_loop(bucket, prefix, valkey_keys, data_dir):
       num_no_updates = 0
       ingest_files(files, files_key, output_key, data_dir)
       time.sleep(20)
-   log.warning(f'Stalled updates: exiting')
-   send_sos(prefix, bucket, "", False)
-   exit(0)
+
+def cleanup(data_dir):
+   if os.path.exists(data_dir):
+      shutil.rmtree(data_dir)
 
 def ingest_data(bucket, prefix):
    #setup
@@ -80,14 +81,23 @@ def ingest_data(bucket, prefix):
    except Exception as e:
       log.warning(f'Error with ingestion setup: {e}')
       trc = traceback.format_exc()
+      cleanup(data_dir)
       send_sos(prefix, bucket, trc, False)
       sys.exit(1)
 
    #ingestion
-   ingest_loop(bucket, prefix, valkey_keys, data_dir)
+   try:
+      ingest_loop(bucket, prefix, valkey_keys, data_dir)
+   except Exception as e:
+      log.warning(f'Error with ingestion loop: {e}')
+      trc = traceback.format_exc()
+      cleanup(data_dir)
+      send_sos(prefix, bucket, trc, True)
+      sys.exit(1)
 
-   #cleanup
-   shutil.rmtree(data_dir)
+   log.info(f'Ingestion stalled due to {STALLED} updates with no new files')
+   cleanup(data_dir)
+   send_sos(prefix, bucket, "", False)
 
 
 if __name__ == '__main__':

@@ -34,17 +34,27 @@ def get_valkey_connection():
          return create_valkey_connection()
       return VALKEY_ENGINE
    
-def wipe_key(key):
+def key_exists(key: str):
+   r = get_valkey_connection()
+   return r.exists(key)
+   
+def wipe_key(key: str):
    r = get_valkey_connection()
    r.delete(key)
 
-def publish_message(channel, data):
+def publish_message(channel: str, data: dict):
+   """Publishes a dictionary as a valkey message
+      :param channel: string to publish dictionary to
+      :param data: dictionary to publish as message
+      :returns: None
+   """
    r = get_valkey_connection()
    r.publish(channel, json.dumps(data))
    
 def get_output_frame(key):
    """Retrieves the output Pandas.DataFrame from key
       :param key: Key in valkey for the DataFrame
+      :returns: pandas.DataFrame
    """
    r = get_valkey_connection()
    data = r.get(key)
@@ -73,7 +83,7 @@ def get_processed_files(key):
    data = r.get(key)
    if data is None:
       log.warn(f'{key} does not exist in valkey')
-      return None
+      return []
    files = list(json.loads(data))
    return files
 
