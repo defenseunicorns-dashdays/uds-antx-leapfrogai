@@ -13,9 +13,9 @@ def create_valkey_connection():
    """Creates a connection to valkey using environment variables
       :returns: redis.Redis object
    """
-   host = os.environ.get('REDIS_HOST')
-   pwd = os.environ.get('REDIS_PASSSWORD', 'test-password')
-   port = os.environ.get('REDIS_PORT', '6379')
+   host = os.environ.get('VALKEY_HOST')
+   pwd = os.environ.get('VALKEY_PASSSWORD', 'test-password')
+   port = os.environ.get('VALKEY_PORT', '6379')
    r = redis.Redis(host=host, port=port, password=pwd)
    VALKEY_ENGINE = r
    return r
@@ -73,6 +73,18 @@ def set_output_frame(key, df):
    r = get_valkey_connection()
    r.set(key, df.to_json())
 
+def get_hash(channel, hash):
+   r = get_valkey_connection()
+   data = r.hget(channel, hash)
+   if data is None:
+      log.warn(f'{hash} does not exist in {channel}')
+      return None
+   result = json.loads(data)
+   return result
+
+def set_hash(channel, hash, value):
+   r = get_valkey_connection()
+   r.hset(channel, hash, value)
 
 def get_json_data(key):
    """Gets json data stored in key
@@ -84,7 +96,7 @@ def get_json_data(key):
    if data is None:
       log.warn(f'{key} does not exist in valkey')
       return []
-   dict_data = list(json.loads(data))
+   dict_data = json.loads(data)
    return dict_data
 
 def set_json_data(key, data):

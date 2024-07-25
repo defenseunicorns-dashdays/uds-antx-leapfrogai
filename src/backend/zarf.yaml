@@ -19,8 +19,11 @@ variables:
   - name: S3_REGION
     description: 'Region of the S3 bucket'
     prompt: true
-  - name: S3_BUCKET_NAME
-    description: 'Name of the S3 bucket to use'
+  - name: S3_READ_BUCKET_NAME
+    description: 'Name of the S3 bucket to pull data from'
+    prompt: true
+  - name: S3_WRITE_BUCKET_NAME
+    description: "Name of the S3 bucket to push data to"
     prompt: true
   - name: S3_ACCESS_KEY
     description: The Access key for the S3 service

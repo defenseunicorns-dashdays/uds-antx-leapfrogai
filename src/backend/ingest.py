@@ -7,10 +7,10 @@ import argparse
 import pandas as pd
 from comms.valkey import get_json_data, set_json_data, publish_message
 from comms.s3 import get_objects, copy_from_s3
-from comms.lfai import transcribe, inference
+from comms.lfai import dummy_transcribe, inference
 from util.logs import get_logger, setup_logging
 from util.loaders import init_outputs, push_data, format_timediff
-from util.objects import MetricTracker
+from util.objects import MetricTracker, CurrentState
 from pathlib import Path
 
 log = get_logger()
@@ -75,23 +75,21 @@ def ingest_file(key: str,
    if not success:
       log.warning(f'Skipping key {key}: could not copy from s3')
       return False
-   start_time, track = get_audio_metadata(key)
-   txt, seconds = transcribe(new_path)
-   tokens = len(txt.split(' '))
+   start_time, end_time, track = get_audio_metadata(key)
+   result = dummy_transcribe(new_path)
+   tokens = result['performanceMetrics']['tokens']
+   seconds = result['performanceMetrics']['timeToTranscribe']
+   txt = ' '.join(result['transcriptions'])
    metrics.update_transcriptions(seconds, tokens)
-   data = inference(txt)
-   data['start_time'] = start_time
-   data['track'] = track
-   metrics.update_inferences(data['seconds'])
-   push_data(txt, data, metrics, valkey_keys)
    os.remove(new_path)
+   return txt, metrics
 
 def ingest_loop(bucket, prefix, valkey_keys, data_dir):
    num_no_updates = 0
    metrics = MetricTracker()
+   current_state = CurrentState.pre_trial_start.value
    while num_no_updates < STALLED:
       files_key = valkey_keys['files_key']
-      output_key = valkey_keys['output_key']
       files = get_files_to_process(files_key, bucket, prefix)
       if len(files) == 0:
          num_no_updates += 1
@@ -99,11 +97,27 @@ def ingest_loop(bucket, prefix, valkey_keys, data_dir):
          continue
       num_no_updates = 0
       processed_files = get_json_data(files_key)
+      data = {}
       for key in files:
-         metrics = ingest_file(key, valkey_keys, data_dir,
+         start_time, end_time, track = get_audio_metadata(key)
+         txt, metrics = ingest_file(key, valkey_keys, data_dir,
                               metrics, bucket)
+         if start_time not in data:
+            data[start_time] = {
+               "start_time":start_time,
+               "end_time":end_time,
+               f"track{track}":txt
+            }
+         else:
+            to_append = data[start_time]
+            to_append[f"track{track}"] = txt
+            data[start_time] = to_append
          processed_files.append(key)
          set_json_data(files_key, processed_files)
+      for k, v in data.items():
+         data[k] = inference(current_state, v)
+         metrics.update_inferences(v["inference_seconds"])
+      push_data(data, metrics, valkey_keys)
       time.sleep(20)
 
 def cleanup(data_dir):
@@ -136,7 +150,6 @@ def ingest_data(bucket, prefix, run_id):
    log.info(f'Ingestion stalled due to {STALLED} updates with no new files')
    cleanup(data_dir)
    send_sos(prefix, bucket, "", False)
-
 
 if __name__ == '__main__':
    setup_logging()
