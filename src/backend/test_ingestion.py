@@ -8,7 +8,7 @@ from subprocess import Popen
 log = get_logger()
 
 def upload_dummy_data(prefix):
-   for i in range(6):
+   for i in range(20):
       for track in range(4):
          track += 1
          ts = pd.Timestamp('now')
