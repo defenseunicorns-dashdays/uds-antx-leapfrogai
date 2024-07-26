@@ -48,3 +48,11 @@ spec:
             value: "###ZARF_VAR_S3_ENDPOINT###"
           - name: LEAPFROG_API_KEY
             value: "###ZARF_VAR_LEAPFROG_API_KEY###"
+          - name: S3_ACCESS_KEY
+            value: "###ZARF_VAR_S3_ACCESS_KEY###"
+          - name: S3_SECRET_KEY
+            value: "###ZARF_VAR_S3_SECRET_KEY###"
+          - name: LOG_DIR
+            value: /tmp/log/
+          - name: DATA_DIR
+            value: /tmp/data/

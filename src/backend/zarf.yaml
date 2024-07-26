@@ -57,10 +57,11 @@ components:
     images:
       - bitnami/valkey:7.2.5-debian-12-r7
   - name: backend
-    required: false
+    required: true
     manifests:
       - name: api
         files:
           - manifests/api.yaml
+          - manifests/listener.yaml
     images:
       - localhost:5000/backend:latest

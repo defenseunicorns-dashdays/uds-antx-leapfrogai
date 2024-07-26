@@ -55,6 +55,17 @@ def upload_file(file_path, key, bucket=WRITE_BUCKET):
       return False
    return True
 
+def delete_key(key, bucket):
+   s3 = get_s3_client()
+   try:
+      resp = s3.delete_object(Bucket=bucket, Key=key)
+      log.info(f'{key} deleted from {bucket}')
+   except Exception as e:
+      log.warning(f"Error deleting {key} from s3://{bucket}")
+      log.warning(traceback.format_exc())
+      return False
+   return True
+
 def copy_from_s3(bucket, key, file_path):
    """Copies a file from s3
       :param bucket: S3 bucket name / ARN

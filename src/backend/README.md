@@ -17,3 +17,6 @@ Use the following targets for `uds run` to bring up a dev deployment from `/src/
 * `push-image`: pushes the api / listener image to the local registry
 * `build-package`: Builds the zarf package with valkey
 * `deploy-package`: Uses the `zarf-config-dev.yaml` to deploy the package
+* Port-forward the valkey service `valkey-master` on port 6379
+
+The easiset way to test the API is to follow the steps for the swagger above and simply hit the `/start/` endpoint followed by multiple `/update/` endpoints and `/end/` endpoint to wipe the data.  The data is dummy data, but it is using the actual storage / query system in valkey found mostly in `util/loaders.py` and `comms/valkey.py`.

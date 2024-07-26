@@ -4,8 +4,9 @@ import random
 import string
 import os
 from comms.valkey import get_output_frame, set_output_frame, set_json_data
-from comms.valkey import get_hash, set_hash, get_json_data
+from comms.valkey import get_json_data
 from comms.valkey import key_exists, wipe_key, publish_message
+from comms.s3 import WRITE_BUCKET, upload_file
 from util.logs import get_logger
 from util.objects import *
 
@@ -15,19 +16,23 @@ OUTPUT_COLUMNS = ['start', 'end', 'track1', 'track2',
                   'track3', 'track4', 'state', 'notes', 'delay type']
 VALKEY_COLUMNS = OUTPUT_COLUMNS + ['seconds_to_state_change']
 
-OUTPUT_STRING_FORMAT = "%-m/%d/Y %I:%M"
+OUTPUT_STRING_FORMAT = "%-m/%d/%Y %-H:%M"
 
-def format_timediff(seconds):
+LOG_DIR = os.environ.get("LOG_DIR", "./")
+
+def format_timediff(seconds, hours=True):
    fmt_seconds = seconds % 60
    minutes = seconds // 60
    fmt_minutes = minutes % 60
    hours = minutes // 60
-   return "{:02d}:{:02d}:{:02d}".format(hours,fmt_minutes,fmt_seconds)
+   dt_string = "{:02d}:{:02d}:{:02d}".format(hours,fmt_minutes,fmt_seconds)
+   if not hours:
+      dt_string = dt_string[3:]
+   return dt_string
 
 def get_random_string(length):
    chars = random.choices(string.ascii_uppercase + string.digits, k=length)
    chars = " ".join(chars)
-   log.info(chars)
    return chars
 
 def get_valkey_keys(prefix, run_id):
@@ -39,10 +44,12 @@ def get_valkey_keys(prefix, run_id):
 
 def wipe_data(key_prefix, run_id):
    keys = get_valkey_keys(key_prefix, run_id)
+   log.debug(f'Deleting keys: {keys}')
    for k, v in keys.items():
       wipe_key(v)
 
 def init_frame():
+   log.info(f'Initializing data frame')
    start_time = pd.Timestamp('now')
    end_time = start_time
    state = CurrentState.pre_trial_start.value
@@ -57,19 +64,29 @@ def init_frame():
       "state": state,
       "notes": "",
       "delay type": "",
-      "seconds_to_state_change": seconds_to_state_change
+      "time_to_change": format_timediff(seconds_to_state_change, hours=False)
    }
    df = pd.DataFrame([data])
    df['start'] = pd.to_datetime(df['start'])
    df['start'] = pd.to_datetime(df['start'])
    return df
 
+def get_current_state(valkeys):
+   df = get_output_frame(valkeys["output_key"])
+   current_state = df.loc[df["state"] != "", "state"].values[-1]
+   delay_reason = df.loc[df["delay type"] != "", "delay type"]
+   if delay_reason.empty:
+      delay_reason = ""
+   else:
+      delay_reason = delay_reason.values[-1]
+   return current_state, delay_reason   
+
 def get_prefix():
    ts = pd.Timestamp("now")
    y = ts.year
    m = ts.month
    d = ts.day
-   prefix = f"Distribution-Statement-D/{y}/{m}/{d}/"
+   prefix = f"Distribution-Statement-D/{y}/{m:02d}/{d:02d}/"
    return prefix
 
 #TODO: track this in valkey
@@ -82,7 +99,6 @@ def get_current_run_id():
 def init_run():
    run_id = get_run_id()
    prefix = get_prefix()
-   set_hash("run_to_prefix", run_id, prefix)
    wipe_data(prefix, run_id)
    keys = get_valkey_keys(prefix, run_id)
    init_outputs(keys)
@@ -107,8 +123,28 @@ def end_run():
    }
    publish_message("events", msg)
 
+def format_for_push(df: pd.DataFrame):
+   df['start'] = df['start'].dt.strftime(OUTPUT_STRING_FORMAT)
+   df['end'] = df['end'].dt.strftime(OUTPUT_STRING_FORMAT)
+   df["next_state"] = df['state'].shift(-1)
+   df.loc[df['state'] == df['next_state'], 'state'] = ""
+   df = df[OUTPUT_COLUMNS]
+   return df
+
+def push_logs(output_key):
+   df = get_output_frame(output_key)
+   start_date = df['start'].min().strftime("%-m_%-d_%Y")
+   df = format_for_push(df)
+   file_path = f"{LOG_DIR}{start_date}_all_tracks.csv"
+   key = file_path.split("/")[-1]
+   log.debug(f'Saving output to {file_path} and s3://{WRITE_BUCKET}/{key}')
+   df.to_csv(file_path, index=False)
+   upload_file(file_path, file_path.split("/")[-1])
+
 def append_row(frame_key, data):
    row = pd.DataFrame([data])
+   row['start'] = pd.to_datetime(row['start'])
+   row['end'] = pd.to_datetime(row['end'])
    df = get_output_frame(frame_key)
    df = pd.concat([df, row], ignore_index=True)
    set_output_frame(frame_key, df)
@@ -129,23 +165,23 @@ def push_metrics(metrics: MetricTracker, metric_key: str):
    set_json_data(metric_key, data)
 
 def push_data(data, metrics, valkeys):
-   for k, v in data.items():
+   for start_time, data_dict in data.items():
       push_data = {
-         "start":v["start_time"],
-         "end":v["end_time"],
-         "track1": v.get("track1", ""),
-         "track2": v.get("track2", ""),
-         "track3": v.get("track3", ""),
-         "track4": v.get("track4", ""),
-         "state": v["state"],
+         "start":data_dict["start_time"],
+         "end":data_dict["end_time"],
+         "track1": data_dict.get("track1", ""),
+         "track2": data_dict.get("track2", ""),
+         "track3": data_dict.get("track3", ""),
+         "track4": data_dict.get("track4", ""),
+         "state": data_dict["state"],
          "notes": "",
-         "delay type": data.get("delay_type", ""),
-         "time_to_change": data["time_to_change"]
+         "delay type": data_dict.get("delay_type", ""),
+         "time_to_change": data_dict["time_to_change"]
       }
       append_row(valkeys['output_key'], push_data)
    push_metrics(metrics, valkeys["metrics_key"])
 
-def test_update(run_id, output_key, metrics_key):
+def test_update(output_key, metrics_key):
    start_time = pd.Timestamp('now')
    length = random.randint(10, 30)
    change_seconds = int(np.random.normal(120, 45, 1)[0])
@@ -153,16 +189,17 @@ def test_update(run_id, output_key, metrics_key):
       "start":start_time,
       "end": start_time,
       "track1": get_random_string(length),
-      "track2": get_random_string(length),
+      "track2": "",
       "track3": get_random_string(length),
       "track4": get_random_string(length),
       "state": random.choice(list(CurrentState)).value,
       "notes": "",
-      "delay_type": "",
-      "time_to_change": format_timediff(change_seconds)
+      "delay type": "",
+      "time_to_change": format_timediff(change_seconds, hours=False)
    }
-   if push_data["state"] == CurrentState.delay_start:
-      push_data["delay_type"] = random.choice(list(DelayReason)).value
+   if push_data["state"] == CurrentState.delay_start.value:
+      push_data["delay type"] = random.choice(list(DelayReason)).value
+      log.debug(f"Delay Start substate: {push_data['delay type']}")
    append_row(output_key, push_data)
    metrics = MetricTracker()
    data = np.random.normal(7,1,6)
@@ -216,8 +253,10 @@ def get_transcriptions(df):
 
 def get_state(df):
    current_state = df['state'].values[-1]
-   if current_state == CurrentState.delay_start:
-      delay_reason = df["delay_type"].values[-1]
+   if current_state == CurrentState.delay_start.value:
+      delay_reason = df["delay type"].values[-1]
+
+      delay_reason = DelayReason(delay_reason)
       resolution = df["time_to_change"].values[-1]
       dly = Delay(**{
          "reason": delay_reason,
@@ -234,7 +273,6 @@ def api_update():
    prefix = get_prefix()
    run_id = get_current_run_id()
    valkeys = get_valkey_keys(prefix, run_id)
-   test_update(run_id, valkeys["output_key"], valkeys["metrics_key"])
    df = get_output_frame(valkeys["output_key"])
    metric_dict = get_json_data(valkeys["metrics_key"])
    metadata = create_metadata(df)

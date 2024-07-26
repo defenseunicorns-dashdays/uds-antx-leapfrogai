@@ -4,6 +4,7 @@ import pandas as pd
 import os
 from io import StringIO
 from util.logs import get_logger
+from util.objects import DATETIME_FORMAT
 
 log = get_logger()
 
@@ -49,6 +50,7 @@ def publish_message(channel: str, data: dict):
       :param data: dictionary to publish as message
       :returns: None
    """
+   log.info(f'Publishing message {data} to channel {channel}')
    r = get_valkey_connection()
    r.publish(channel, json.dumps(data))
    
@@ -73,6 +75,9 @@ def set_output_frame(key, df):
       :param df: Pandas.DataFrame object to store
       :returns: None
    """
+   df['start'] = df['start'].dt.strftime(DATETIME_FORMAT)
+   df['end'] = df['end'].dt.strftime(DATETIME_FORMAT)
+   log.debug(f'Saving frame to {key}:\n{df.tail()}')
    r = get_valkey_connection()
    r.set(key, df.to_json())
 

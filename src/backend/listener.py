@@ -15,7 +15,7 @@ class Listener:
       self.processes = {}
 
    def spawn_process(self, bucket, key_prefix, run_id):
-      cmd = ["python3", "ingest.py", bucket, key_prefix, run_id]
+      cmd = ["python3", "ingest.py", bucket, key_prefix, str(run_id)]
       log.info(f'Creating process with command: {cmd}')
       self.processes[key_prefix] = Popen(cmd)
 
@@ -72,7 +72,6 @@ class Listener:
       code = proc.wait()
       if restart:
          self.spawn_process(bucket, key_prefix, run_id)
-
 
    def process_message(self, data):
       data = json.loads(data)

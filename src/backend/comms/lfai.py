@@ -9,10 +9,13 @@ import tempfile
 from util.logs import get_logger
 from util.objects import CurrentState, DelayReason
 from util.loaders import format_timediff, get_random_string
+<<<<<<< HEAD
 from prompts.system_prompt_quotes_v3 import sys_prompt
 from enums.tracks import track_mapping
 from prompts.state_options import next_state_options
 from prompts.user_prompt_quotes_v3 import user, examples
+=======
+>>>>>>> 83e5ea93df6e10382da6de687c8215918b3bb5cd
 
 log = get_logger()
 
@@ -30,8 +33,16 @@ STATE_CHANGE_PROB = .01
 def dummy_transcribe(file_path):
    t1 = time.time()
    length = random.randint(20, 30)
+<<<<<<< HEAD
    res = get_random_string(length)
    time.sleep(random.randint(4,7))
+=======
+   trans = []
+   for i in range (4):
+      res = get_random_string(length)
+      #time.sleep(random.randint(4,7))
+      trans.append(res)
+>>>>>>> 83e5ea93df6e10382da6de687c8215918b3bb5cd
    t2 = time.time()
    result = {
       "transcription": res,
@@ -40,12 +51,22 @@ def dummy_transcribe(file_path):
          "tokens": random.randint(10,20)
       }
    }
+<<<<<<< HEAD
    return json.dumps(result)
 
 def dummy_inference(current_state, data):
    t1 = time.time()
    seconds_to_next_event = random.randint(0, 120)
    formatted_time_to_change = format_timediff(seconds_to_next_event)
+=======
+   return result
+
+def dummy_inference(data):
+   t1 = time.time()
+   seconds_to_next_event = random.randint(0, 120)
+   formatted_time_to_change = format_timediff(seconds_to_next_event)
+   current_state = data['state']
+>>>>>>> 83e5ea93df6e10382da6de687c8215918b3bb5cd
    if random.random() < STATE_CHANGE_PROB:
       current_state = random.choice(list(CurrentState)).value
    data['state'] = current_state
@@ -55,7 +76,11 @@ def dummy_inference(current_state, data):
    else:
       data["delay_type"] = ""
    data["time_to_change"] = formatted_time_to_change
+<<<<<<< HEAD
    time.sleep(random.randint(1, 5))
+=======
+   #time.sleep(random.randint(1, 5))
+>>>>>>> 83e5ea93df6e10382da6de687c8215918b3bb5cd
    data['inference_seconds'] = time.time() - t1
    return data  
 
@@ -138,14 +163,24 @@ def build_transcribe_request(file_path, response_type='json', segmentation=[], l
          subprocess.run(command, shell=True, check=True)
          
          transcription, time_taken = transcribe_audio(chunk_path)
+<<<<<<< HEAD
          tokens += transcription.split(' ')
          transcriptions.append(transcription)
+=======
+         transcriptions.append(transcription)
+         tokens += len(transcriptions.split(' '))
+>>>>>>> 83e5ea93df6e10382da6de687c8215918b3bb5cd
          times.append(time_taken)
 
    # Calculate performance metrics  
    performance_metrics = {
+<<<<<<< HEAD
       "timeToTranscribe": sum(times),
       "tokens": tokens
+=======
+      "timeToTranscribe": sum(times) ,
+      "tokens": tokens    
+>>>>>>> 83e5ea93df6e10382da6de687c8215918b3bb5cd
    }
 
    result = {
@@ -154,7 +189,11 @@ def build_transcribe_request(file_path, response_type='json', segmentation=[], l
    }
 
    if response_type == 'json':
+<<<<<<< HEAD
       return json.dumps(result)
+=======
+      return result
+>>>>>>> 83e5ea93df6e10382da6de687c8215918b3bb5cd
    else:
       return ' '.join(transcriptions)
 
@@ -191,6 +230,7 @@ def transcribe_audio(file_path):
       log.error(f"Error transcribing {file_path}: {response.status_code}")
       return "", 0
 
+<<<<<<< HEAD
 def inference(transcription, current_state):
    return dummy_inference(current_state)
 
@@ -283,3 +323,7 @@ def chat_completion(data_dict: dict,
          return response
    except Exception as e:
       print(e)
+=======
+def inference(current_state):
+   return dummy_inference(current_state)
+>>>>>>> 83e5ea93df6e10382da6de687c8215918b3bb5cd
