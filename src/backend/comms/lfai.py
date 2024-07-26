@@ -136,7 +136,6 @@ def build_transcribe_request(file_path, response_type='json', segmentation=[], l
          transcription, time_taken = transcribe_audio(chunk_path)
          tokens += transcription.split(' ')
          transcriptions.append(transcription)
-         tokens += len(transcriptions.split(' '))
          times.append(time_taken)
 
    # Calculate performance metrics  
