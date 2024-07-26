@@ -30,7 +30,8 @@ class Listener:
          if code is None:
             log.warning(f'Process is running...')
          else:
-            log.warning(f'Process exited with code: {code}, use a resume message to resume')
+            log.warning(f'Process exited with code: {code}')
+            self.spawn_process(bucket, key_prefix, run_id)
       else:
          self.spawn_process(bucket, key_prefix, run_id)
 
@@ -61,6 +62,17 @@ class Listener:
             log.info(f'Killing process associated with key: {key_prefix}')
             proc.kill()
             del self.processes[key_prefix]
+
+   def wait_and_resume(self, data):
+      key_prefix = data["prefix"]
+      bucket = data["bucket"]
+      run_id = data["run_id"]
+      restart = data["restart"]
+      proc = self.processes.get(key_prefix)
+      code = proc.wait()
+      if restart:
+         self.spawn_process(bucket, key_prefix, run_id)
+
 
    def process_message(self, data):
       data = json.loads(data)

@@ -155,4 +155,5 @@ if __name__ == '__main__':
    parser.add_argument('prefix', help="s3 key prefix to check")
    parser.add_argument('run_id', help="run_id to help keep data stored separately")
    args = parser.parse_args()
-   ingest_data(args.bucket, args.prefix, args.test)
+   log.info(f"Spawned ingestion with args: {args}")
+   #ingest_data(args.bucket, args.prefix, args.test)

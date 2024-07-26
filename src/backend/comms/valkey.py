@@ -13,7 +13,7 @@ def create_valkey_connection():
    """Creates a connection to valkey using environment variables
       :returns: redis.Redis object
    """
-   host = os.environ.get('VALKEY_HOST')
+   host = os.environ.get('VALKEY_HOST', "localhost")
    pwd = os.environ.get('VALKEY_PASSSWORD', 'test-password')
    port = os.environ.get('VALKEY_PORT', '6379')
    r = redis.Redis(host=host, port=port, password=pwd)
@@ -40,7 +40,8 @@ def key_exists(key: str):
    
 def wipe_key(key: str):
    r = get_valkey_connection()
-   r.delete(key)
+   if r.exists(key):
+      r.delete(key)
 
 def publish_message(channel: str, data: dict):
    """Publishes a dictionary as a valkey message
@@ -62,6 +63,8 @@ def get_output_frame(key):
       log.warn(f'{key} does not exist in valkey')
       return None
    df = pd.read_json(StringIO(data.decode('utf-8')))
+   df['start'] = pd.to_datetime(df['start'])
+   df['end'] = pd.to_datetime(df['end'])
    return df
 
 def set_output_frame(key, df):

@@ -9,3 +9,11 @@ To access the backend API swagger docs, do the following steps:
 2. `pip install -r requirements.txt`
 3. `fastapi dev api.py`
 4. open `localhost:8000/docs` in a browser
+
+## Testing environment
+Use the following targets for `uds run` to bring up a dev deployment from `/src/backend`:
+* `uds-up`: uses `test/uds-config.yaml` to create the proper minio buckets and credentials
+* `registry-up`: crates a local docker registry for local image pushing
+* `push-image`: pushes the api / listener image to the local registry
+* `build-package`: Builds the zarf package with valkey
+* `deploy-package`: Uses the `zarf-config-dev.yaml` to deploy the package

@@ -1,21 +1,23 @@
 from fastapi import FastAPI
 from util.objects import Update
 from util.loaders import init_run, api_update, end_run
+import logging
 
 app = FastAPI()
 
-@app.get("/start/", status_code=201)
-async def start() -> int:
-   run_id = init_run()
-   return run_id
+logging.basicConfig(level=logging.DEBUG,
+                    format='[%(asctime)s] %(levelname)s [%(filename)s.%(funcName)s:%(lineno)d] | %(message)s')
+
+@app.get("/start/", status_code=204)
+async def start() -> None:
+   init_run()
+   return 
 
 @app.get("/end/", status_code=200)
-async def end(run_id: int) -> Update:
-   end_run(run_id)
-   return api_update(run_id)
+async def end() -> Update:
+   end_run()
+   return api_update()
 
 @app.get("/update/", status_code=200)
-async def update(run_id: int) -> Update:
-   if not run_id:
-      raise Exception
-   return api_update(run_id)
+async def update() -> Update:
+   return api_update()
