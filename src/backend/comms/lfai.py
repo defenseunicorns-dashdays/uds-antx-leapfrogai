@@ -54,7 +54,7 @@ def dummy_inference(data):
    if random.random() < STATE_CHANGE_PROB:
       current_state = random.choice(list(CurrentState)).value
    data['state'] = current_state
-   if current_state == 'Delay Start':
+   if current_state.startswith('Delay'):
       data['delay_type'] = random.choice(list(DelayReason)).value
       data['delay_resolution'] = formatted_time_to_change
    else:

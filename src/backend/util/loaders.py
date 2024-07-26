@@ -197,9 +197,9 @@ def test_update(output_key, metrics_key):
       "delay type": "",
       "time_to_change": format_timediff(change_seconds, hours=False)
    }
-   if push_data["state"] == CurrentState.delay_start.value:
+   if push_data["state"].startswith("Delay"):
       push_data["delay type"] = random.choice(list(DelayReason)).value
-      log.debug(f"Delay Start substate: {push_data['delay type']}")
+      log.debug(f"Delay substate: {push_data['delay type']}")
    append_row(output_key, push_data)
    metrics = MetricTracker()
    data = np.random.normal(7,1,6)
