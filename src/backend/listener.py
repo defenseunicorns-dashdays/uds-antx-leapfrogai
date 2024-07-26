@@ -4,7 +4,7 @@ import os
 import json
 import traceback
 from subprocess import Popen
-from util.loaders import get_valkey_keys
+from util.loaders import wipe_data
 
 log = get_logger()
 
@@ -62,12 +62,6 @@ class Listener:
             proc.kill()
             del self.processes[key_prefix]
 
-   def wipe_data(self, data):
-      key_prefix = data['prefix']
-      redis_keys = get_valkey_keys(key_prefix)
-      for k, v in redis_keys.items():
-         wipe_key(v)
-
    def process_message(self, data):
       data = json.loads(data)
       msg_type = data['message_type']
@@ -80,7 +74,7 @@ class Listener:
       elif msg_type == 'error':
          self.wait_and_resume(data)
       elif msg_type == 'wipe':
-         self.wipe_data(data)
+         wipe_data(data['prefix'])
       else:
          log.warn(f'Could not process message: {data}')
 

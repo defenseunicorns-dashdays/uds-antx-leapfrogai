@@ -4,7 +4,7 @@ import random
 import string
 from comms.valkey import get_output_frame, set_output_frame, set_json_data
 from comms.valkey import get_hash, set_hash, get_json_data
-from comms.valkey import key_exists
+from comms.valkey import key_exists, wipe_key
 from util.logs import get_logger
 from util.objects import *
 log = get_logger()
@@ -32,6 +32,11 @@ def get_valkey_keys(prefix, run_id):
       'metrics_key': f'{run_id}_metrics'
          }
 
+def wipe_data(key_prefix):
+   keys = get_valkey_keys(key_prefix)
+   for k, v in keys.items():
+      wipe_key(v)
+
 def init_frame():
    start_time = pd.Timestamp('now')
    end_time = start_time
@@ -50,6 +55,16 @@ def init_frame():
       "seconds_to_state_change": seconds_to_state_change
    }
    return pd.DataFrame([data])
+
+def init_run():
+   #TODO: track this in valkey
+   run_id = -1
+   ts = pd.Timestamp("now")
+   y = ts.year
+   m = ts.month
+   d = ts.day
+   prefix = "Distribution-Statement-D/{y}/{m}/{d}/"
+   wipe_data()
 
 def append_row(frame_key, data):
    row = pd.DataFrame([data])
@@ -173,7 +188,6 @@ def get_state(df):
       "currentState": CurrentState(current_state),
       "delay": dly
    })
-
 
 def api_update(run_id):
    prefix = get_hash('run_to_prefix', run_id)

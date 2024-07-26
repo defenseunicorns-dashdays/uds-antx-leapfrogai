@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ingestion
+  name: ingestion
+  namespace: antx
+spec:
+  selector:
+    matchLabels:
+      app: ingestion
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ingestion
+    spec:
+      containers:
+      - name: ingestion
+        imagePullPolicy: Always
+        image: localhost:5000/backend:latest
+        command:
+        - /bin/bash
+        - -c
+        args:
+        - python3 listener.py
+        resources:
+          requests:
+            cpu: 500m
+            memory: 528M
+          limits:
+            cpu: 1
+            memory: 2Gi
+        env:
+          - name: READ_BUCKET
+            value: "###ZARF_VAR_S3_READ_BUCKET_NAME###"
+          - name: WRITE_BUCKET
+            value: "###ZARF_VAR_S3_WRITE_BUCKET_NAME###"
+          - name: VALKEY_HOST
+            value: "###ZARF_VAR_VALKEY_HOST###"
+          - name: VALKEY_PASSWORD
+            value: "###ZARF_VAR_VALKEY_PASSWORD###"
+          - name: VALKEY_PORT
+            value: "###ZARF_VAR_VALKEY_PORT###"
+          - name: S3_REGION
+            value: "###ZARF_VAR_S3_REGION###"
+          - name: S3_ENDPOINT
+            value: "###ZARF_VAR_S3_ENDPOINT###"
+          - name: LEAPFROG_API_KEY
+            value: "###ZARF_VAR_LEAPFROG_API_KEY###"
