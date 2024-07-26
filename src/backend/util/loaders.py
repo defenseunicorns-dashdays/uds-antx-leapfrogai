@@ -2,9 +2,10 @@ import pandas as pd
 import numpy as np
 import random
 import string
+import os
 from comms.valkey import get_output_frame, set_output_frame, set_json_data
 from comms.valkey import get_hash, set_hash, get_json_data
-from comms.valkey import key_exists, wipe_key
+from comms.valkey import key_exists, wipe_key, publish_message
 from util.logs import get_logger
 from util.objects import *
 log = get_logger()
@@ -64,7 +65,19 @@ def init_run():
    m = ts.month
    d = ts.day
    prefix = "Distribution-Statement-D/{y}/{m}/{d}/"
-   wipe_data()
+   set_hash("run_to_prefix", run_id, prefix)
+   wipe_data(prefix)
+   keys = get_valkey_keys(prefix)
+   init_outputs(keys, prefix)
+
+   #Kick off ingestion
+   msg = {
+      "message_type": "start",
+      "bucket": os.environ.get("READ_BUCKET", "antx"),
+      "prefix": prefix,
+      "run_id": run_id
+   }
+   publish_message("events", msg)
 
 def append_row(frame_key, data):
    row = pd.DataFrame([data])
@@ -118,7 +131,6 @@ def test_update(run_id, output_key, metrics_key):
       "state": random.choice(list(CurrentState)).value,
       "notes": "",
       "delay_type": "",
-      "predicted_state": random.choice(list(CurrentState)).value,
       "time_to_change": format_timediff(change_seconds)
    }
    if push_data["state"] == CurrentState.delay_start:
