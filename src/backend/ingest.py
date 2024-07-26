@@ -117,46 +117,9 @@ def ingest_loop(bucket, prefix, valkey_keys, data_dir):
          processed_files.append(key)
          set_json_data(files_key, processed_files)
       for k, v in data.items():
-         tracks = parse_data_object(v)
-         user_message = build_user_message(user, 
-                                           examples, 
-                                           current_state, 
-                                           tracks, 
-                                           next_state_options
-                                           )
          data[k] = inference(current_state, v)
          metrics.update_inferences(v["inference_seconds"])
       push_data(data, metrics, valkey_keys)
-
-def parse_data_object(data_object: dict[str,Any]) -> str:
-    '''
-    Given a data object representing a single minute of radio tracks,
-    this function parses the tracks, maps the original track names to 
-    their functional names, and joins them with a double new-line break.
-    '''
-    tracks = [{k:v} for k,v in data_object.items() if k.startswith('track')]
-    mapped_tracks = []
-    for track in tracks:
-        for key, value in track.items():
-            mapped_tracks.append(f'{track_mapping[key]}: {value}')
-    return '\n\n'.join(mapped_tracks)
-
-def build_user_message(base_user_prompt: str,
-                       examples: str, 
-                       current_state: str, 
-                       radio_tracks: str, 
-                       next_state_options_dict: dict
-                       ) -> str:
-    '''
-    Builds user message string variable from dynamic string parameters.
-    '''
-    next_state_options = next_state_options_dict[current_state]
-    user_prompt = base_user_prompt.format(examples=examples, 
-                                          current_state=current_state, 
-                                          transmissions=radio_tracks, 
-                                          next_state_options=next_state_options
-                                          )
-    return user_prompt
 
 def cleanup(data_dir):
    if os.path.exists(data_dir):
