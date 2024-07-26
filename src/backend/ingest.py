@@ -9,7 +9,7 @@ from comms.valkey import get_json_data, set_json_data, publish_message
 from comms.s3 import get_objects, copy_from_s3
 from comms.lfai import dummy_transcribe, inference
 from util.logs import get_logger, setup_logging
-from util.loaders import init_outputs, push_data, format_timediff
+from util.loaders import init_outputs, push_data, get_valkey_keys
 from util.objects import MetricTracker, CurrentState
 from pathlib import Path
 
@@ -17,13 +17,6 @@ log = get_logger()
 
 MESSAGE_CHANNEL = os.environ.get('SUB_CHANNEL', 'events')
 STALLED = 300
-
-def get_valkey_keys(prefix, run_id):
-   return {
-      'files_key': f'{prefix}_processed_files',
-      'output_key': f'{run_id}_output',
-      'metrics_key': f'{run_id}_metrics'
-         }
 
 def get_files_to_process(file_key, bucket, prefix=""):
    """Returns a list of files to process
@@ -63,7 +56,13 @@ def setup_ingestion(prefix):
    return data_dir
 
 def get_audio_metadata(key):
-   
+   splits = key.split('/')
+   Y, M, D, track, fname = splits[1:6]
+   h,m,s = fname.split(" ")[-1].split("-")[0:3]
+   s = s.split("_")[0]
+   start_time = pd.Timestamp(f"{Y}/{M}/{D} {h}:{m}:{s}")
+   end_time = start_time + pd.Timedelta(seconds=68)
+   return start_time, end_time, track
 
 def ingest_file(key: str,
                 valkey_keys: dict,
@@ -117,7 +116,6 @@ def ingest_loop(bucket, prefix, valkey_keys, data_dir):
          data[k] = inference(current_state, v)
          metrics.update_inferences(v["inference_seconds"])
       push_data(data, metrics, valkey_keys)
-      time.sleep(20)
 
 def cleanup(data_dir):
    if os.path.exists(data_dir):

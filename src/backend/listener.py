@@ -4,7 +4,7 @@ import os
 import json
 import traceback
 from subprocess import Popen
-from ingest import get_valkey_keys
+from util.loaders import get_valkey_keys
 
 log = get_logger()
 

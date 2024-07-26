@@ -42,12 +42,9 @@ def dummy_inference(current_state, data):
    t1 = time.time()
    seconds_to_next_event = random.randint(0, 120)
    formatted_time_to_change = format_timediff(seconds_to_next_event)
-   predicted_state = random.choice(list(CurrentState)).value
    if random.random() < STATE_CHANGE_PROB:
-      current_state = predicted_state
-      predicted_state = random.choice(list(CurrentState)).value
+      current_state = random.choice(list(CurrentState)).value
    data['state'] = current_state
-   data['predicted_state'] = predicted_state
    if current_state == 'Delay Start':
       data['delay_type'] = random.choice(list(DelayReason)).value
       data['delay_resolution'] = formatted_time_to_change
