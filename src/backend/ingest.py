@@ -5,6 +5,9 @@ import time
 import traceback
 import argparse
 import pandas as pd
+from enums.tracks import track_mapping
+from prompts.state_options import next_state_options
+from prompts.user_prompt_quotes_v3 import user, examples
 from comms.valkey import get_json_data, set_json_data, publish_message
 from comms.s3 import get_objects, copy_from_s3
 from comms.lfai import dummy_transcribe, inference
@@ -12,6 +15,7 @@ from util.logs import get_logger, setup_logging
 from util.loaders import init_outputs, push_data, get_valkey_keys
 from util.objects import MetricTracker, CurrentState
 from pathlib import Path
+from typing import Any
 
 log = get_logger()
 
@@ -113,9 +117,46 @@ def ingest_loop(bucket, prefix, valkey_keys, data_dir):
          processed_files.append(key)
          set_json_data(files_key, processed_files)
       for k, v in data.items():
+         tracks = parse_data_object(v)
+         user_message = build_user_message(user, 
+                                           examples, 
+                                           current_state, 
+                                           tracks, 
+                                           next_state_options
+                                           )
          data[k] = inference(current_state, v)
          metrics.update_inferences(v["inference_seconds"])
       push_data(data, metrics, valkey_keys)
+
+def parse_data_object(data_object: dict[str,Any]) -> str:
+    '''
+    Given a data object representing a single minute of radio tracks,
+    this function parses the tracks, maps the original track names to 
+    their functional names, and joins them with a double new-line break.
+    '''
+    tracks = [{k:v} for k,v in data_object.items() if k.startswith('track')]
+    mapped_tracks = []
+    for track in tracks:
+        for key, value in track.items():
+            mapped_tracks.append(f'{track_mapping[key]}: {value}')
+    return '\n\n'.join(mapped_tracks)
+
+def build_user_message(base_user_prompt: str,
+                       examples: str, 
+                       current_state: str, 
+                       radio_tracks: str, 
+                       next_state_options_dict: dict
+                       ) -> str:
+    '''
+    Builds user message string variable from dynamic string parameters.
+    '''
+    next_state_options = next_state_options_dict[current_state]
+    user_prompt = base_user_prompt.format(examples=examples, 
+                                          current_state=current_state, 
+                                          transmissions=radio_tracks, 
+                                          next_state_options=next_state_options
+                                          )
+    return user_prompt
 
 def cleanup(data_dir):
    if os.path.exists(data_dir):
@@ -149,11 +190,13 @@ def ingest_data(bucket, prefix, run_id):
    send_sos(prefix, bucket, "", False)
 
 if __name__ == '__main__':
-   setup_logging()
-   parser = argparse.ArgumentParser(description="postional args: bucket, prefix, run_id")
-   parser.add_argument('bucket', help="s3 bucket name")
-   parser.add_argument('prefix', help="s3 key prefix to check")
-   parser.add_argument('run_id', help="run_id to help keep data stored separately")
-   args = parser.parse_args()
-   log.info(f"Spawned ingestion with args: {args}")
-   #ingest_data(args.bucket, args.prefix, args.test)
+   # setup_logging()
+   # parser = argparse.ArgumentParser(description="postional args: bucket, prefix, run_id")
+   # parser.add_argument('bucket', help="s3 bucket name")
+   # parser.add_argument('prefix', help="s3 key prefix to check")
+   # parser.add_argument('run_id', help="run_id to help keep data stored separately")
+   # args = parser.parse_args()
+   # log.info(f"Spawned ingestion with args: {args}")
+   # #ingest_data(args.bucket, args.prefix, args.test)
+   prompt = build_user_message(user, examples, 'Trial Start', 'Boat Operators: \n\nMotorola Radios: \n\nTest Director: All stations, all stations, be advised, trial start, trial start.\n\nPatrol Craft Command Unit (PCCU): All stations, all stations, be advised, trial start, trial start.', next_state_options)
+   print(prompt)

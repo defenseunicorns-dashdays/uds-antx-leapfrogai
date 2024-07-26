@@ -3,10 +3,6 @@ zarf-sbom
 *.ipynb*
 data/*
 .DS_Store
-<<<<<<< HEAD
-*.env
-=======
 *.pyc
 *.env
 *checkpoint.ipynb
->>>>>>> af1d452 (post rebase conflict)

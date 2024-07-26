@@ -1,4 +1,4 @@
-from src.enums.states import States 
+from enums.states import States 
 
 trial_start = States.TRIAL_START.value 
 trial_end = States.TRIAL_END.value

@@ -9,6 +9,7 @@ import tempfile
 from util.logs import get_logger
 from util.objects import CurrentState, DelayReason
 from util.loaders import format_timediff, get_random_string
+from prompts.system_prompt_quotes_v3 import sys_prompt
 
 log = get_logger()
 
@@ -190,3 +191,50 @@ def transcribe_audio(file_path):
 def inference(transcription, current_state):
    return dummy_inference(current_state)
 
+
+def _format_response(response: requests.models.Response) -> str:
+    '''
+    Reformats model response from json to a string
+    '''
+    json_response = response.json()
+    return json_response['choices'][0]['message']['content'].strip()
+
+def chat_completion(user_prompt: str,
+                    temperature: float=0.8,
+                    max_tokens: int=250,
+                    stream: bool=False,
+                    raw: bool=False
+                    ) -> str | dict:
+    url = os.environ['LEAPFROG_URL']
+    api_key = os.environ['LEAPFROG_API_KEY']
+    headers = {
+    'Authorization': f'Bearer {api_key}',
+    'Content-Type': 'application/json'
+    }
+    data = {
+            "model": "vllm",
+            "messages": [
+               {
+                     "role": "system",
+                     "content": sys_prompt
+               },
+               {
+                     "role": "user",
+                     "content": user_prompt,
+               }
+            ],
+            "stream": stream,
+            "temperature": temperature,
+            "max_tokens": max_tokens
+         }
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+        if response.status_code == 200:
+            if raw:
+                return response.json()
+            else: return _format_response(response)
+        else:
+            print('Response is not 200')
+            return response
+    except Exception as e:
+        print(e)

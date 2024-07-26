@@ -1,4 +1,4 @@
-from src.enums.states import States
+from enums.states import States
 
 mag_four = {"Options": [States.TRIAL_START.value,
                         States.DELAY_START.value,
