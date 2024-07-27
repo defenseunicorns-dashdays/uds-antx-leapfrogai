@@ -56,6 +56,23 @@ components:
           - values/valkey.yaml
     images:
       - bitnami/valkey:7.2.5-debian-12-r7
+  - name: setup-variables
+    required: true
+    actions:
+      onDeploy:
+        before:
+          - cmd: echo $LEAPFROG_API_KEY
+            setVariables:
+              - name: LEAPFROG_API_KEY
+                sensitive: true
+          - cmd: echo $AWS_SECRET_KEY
+            setVariables:
+              - name: AWS_SECRET_KEY
+                sensitive: true
+          - cmd: echo $AWS_ACCESS_KEY
+            setVariabels:
+              - name: S3_SECRET_KEY
+                sensitive: true
   - name: backend
     required: true
     manifests:
