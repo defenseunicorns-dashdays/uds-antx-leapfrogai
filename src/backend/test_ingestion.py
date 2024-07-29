@@ -53,8 +53,8 @@ if __name__ == '__main__':
    mode = args.mode
    log.info(f"Running testing with mode={mode}")
    if mode == "setup":
-      wipe_data(prefix, 1)
-      clear_s3()
+      # wipe_data(prefix, 1)
+      # clear_s3()
       upload_dummy_data(prefix, 1)
    elif mode == "start_ingestion":
       wipe_data

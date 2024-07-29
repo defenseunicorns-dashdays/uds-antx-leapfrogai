@@ -178,9 +178,9 @@ def ingest_data(bucket, prefix, run_id):
    except Exception as e:
       log.warning(f'Error with ingestion setup: {e}')
       trc = traceback.format_exc()
-      cleanup(data_dir)
-      send_sos(prefix, bucket, run_id, trc, False)
-      sys.exit(1)
+      # cleanup(data_dir)
+      send_sos(prefix, bucket, run_id, trc, True)
+      # sys.exit(1)
 
    #ingestion
    try:
@@ -188,13 +188,13 @@ def ingest_data(bucket, prefix, run_id):
    except Exception as e:
       log.warning(f'Error with ingestion loop: {e}')
       trc = traceback.format_exc()
-      cleanup(data_dir)
-      send_sos(prefix, bucket, run_id, trc, False)
-      sys.exit(1)
+      # cleanup(data_dir)
+      send_sos(prefix, bucket, run_id, trc, True)
+      # sys.exit(1)
 
    log.info(f'Ingestion stalled due to {STALLED} updates with no new files')
    cleanup(data_dir)
-   send_sos(prefix, bucket, run_id, "", False)
+   send_sos(prefix, bucket, run_id, "", True)
 
 if __name__ == '__main__':
    setup_logging()

@@ -1,13 +1,12 @@
 package:
   deploy:
     set:
-      S3_ACCESS_KEY: 9GHSyatJi0LlWfecGT7K
-      S3_SECRET_KEY: cE1buvYmHR1KEa3B4p2k1LQgvtoT9JfisvbxzYKX
-      S3_READ_BUCKET_NAME: uds
-      S3_WRITE_BUCKET_NAME: uds
-      S3_ENDPOINT: http://minio.uds-dev-stack.svc.cluster.local:9000
+      S3_ACCESS_KEY: s3-access # change
+      S3_SECRET_KEY: s3-secret # change
+      S3_READ_BUCKET_NAME: uds # change
+      S3_WRITE_BUCKET_NAME: uds # change
+      S3_ENDPOINT: http://minio.uds-dev-stack.svc.cluster.local:9000 # change
       VALKEY_PASSWORD: test-password
       VALKEY_HOST: valkey-master.antx.svc.cluster.local
       VALKEY_PORT: 6379
-      LEAPFROG_API_KEY: test-key
-      
+      LEAPFROG_API_KEY: lfai-key # change this
