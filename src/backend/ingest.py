@@ -237,4 +237,6 @@ if __name__ == '__main__':
    parser.add_argument('run_id', help="run_id to help keep data stored separately")
    args = parser.parse_args()
    log.info(f"Spawned ingestion with args: {args}")
-   ingest_data(args.bucket, args.prefix, args.run_id)
+   time.sleep(120)
+   send_sos(args.prefix, args.bucket, args.run_id, "", False)
+   #ingest_data(args.bucket, args.prefix, args.run_id)

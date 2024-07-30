@@ -24,6 +24,7 @@ class Listener:
       log.info(f'Creating process with command: {cmd}')
       self.process = Popen(cmd)
       data = {"prefix": key_prefix, "run_id": run_id, "status":"Running"}
+      log.info(f"Setting current process status to {data}")
       set_json_data(STATUS_KEY, data)
 
    def start_ingestion(self, data):
