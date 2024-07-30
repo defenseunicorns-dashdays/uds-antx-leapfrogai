@@ -16,22 +16,22 @@ def upload_dummy_data(prefix, date, iters):
       choices = os.listdir("./test/audio/")
       choices = [x for x in choices if x.endswith('.mp3')]
       choices = np.random.choice(choices, 4)
+      ts = pd.Timestamp('now', tz="US/Pacific")
+      y = ts.year
+      m = ts.month
+      d = ts.day
+      h = ts.hour
+      if date:
+         ts.replace(month=date.month)
+         ts.replace(day=date.day)
+      min = ts.minute
+      sec = ts.second
       for track in range(4):
          file_path = f"./test/audio/{choices[track]}"
          track += 1
-         ts = pd.Timestamp('now', tz="US/Pacific")
-         y = ts.year
-         m = ts.month
-         d = ts.day
-         h = ts.hour
-         if date:
-            ts.replace(month=date.month)
-            ts.replace(day=date.day)
-         min = ts.minute
-         sec = ts.second
          key = f"{prefix}track{track}/{y}-{m:02d}-{d:02d} {h:02d}-{min:02d}-{sec:02d}_track{track}.mp3"
          upload_file(file_path, key, READ_BUCKET)
-      time.sleep(5)
+      time.sleep(30)
 
 def spawn_ingestion(prefix, run_id):
    bucket = READ_BUCKET
@@ -51,14 +51,12 @@ if __name__ == '__main__':
    setup_logging()
    parser = argparse.ArgumentParser(description="testing arguments: mode can be setup, start_ingestion, start_upload")
    parser.add_argument("mode")
-   parser.add_argument("date")
+   parser.add_argument("-d", "--date", required=False, help="MMDDYYYY string")
    args = parser.parse_args()
    mode = args.mode
-   if "date" in args:
-      date = args.date
+   date = args.date
+   if date:
       date = parse_date(date)
-   else:
-      date = None
    prefix = get_prefix(date)
    _, run_id, status = get_current_run()
    run_id = int(run_id) + 1

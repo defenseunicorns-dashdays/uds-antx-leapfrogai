@@ -67,11 +67,14 @@ def wipe_data(key_prefix, run_id):
 
 def init_frame(date:pd.Timestamp):
    log.info(f'Initializing data frame')
-   start_time = date
    now = pd.Timestamp('now', tz=TIME_ZONE)
-   start_time.replace(hour = now.hour)
-   start_time.replace(minute = now.minute)
-   start_time.replace(second = now.second)
+   if date:
+      start_time = date
+      start_time.replace(hour = now.hour)
+      start_time.replace(minute = now.minute)
+      start_time.replace(second = now.second)
+   else:
+      start_time = now
    end_time = start_time
    state = CurrentState.trial_start.value
    seconds_to_state_change = 75
