@@ -5,12 +5,12 @@ import time
 import traceback
 import argparse
 import pandas as pd
-from comms.valkey import get_json_data, set_json_data, publish_message
+from comms.valkey import get_json_data, set_json_data, publish_message, STATUS_KEY, TIME_ZONE
 from comms.s3 import get_objects, copy_from_s3
 from comms.lfai import build_transcribe_request, chat_completion
 from util.logs import get_logger, setup_logging
 from util.loaders import init_outputs, push_data, get_valkey_keys, test_update
-from util.loaders import push_logs, get_current_state, TIME_ZONE
+from util.loaders import push_logs, get_current_state
 from util.objects import MetricTracker
 from pathlib import Path
 
@@ -50,6 +50,8 @@ def send_sos(prefix, bucket,run_id, trc, restart):
            'bucket':bucket, 'run_id': run_id,
            'traceback': trc, 'restart': restart}
    publish_message(MESSAGE_CHANNEL, data)
+   status = {"run_id":run_id, "prefix":prefix, "status":"Exiting"}
+   set_json_data(STATUS_KEY, status)
 
 def setup_ingestion(prefix):
    """Creates the tmp directory to download files from s3
@@ -209,9 +211,9 @@ def ingest_data(bucket, prefix, run_id):
    except Exception as e:
       log.warning(f'Error with ingestion setup: {e}')
       trc = traceback.format_exc()
-      # cleanup(data_dir)
-      send_sos(prefix, bucket, run_id, trc, True)
-      # sys.exit(1)
+      cleanup(data_dir)
+      send_sos(prefix, bucket, run_id, trc, False)
+      sys.exit(1)
 
    #ingestion
    try:
@@ -219,13 +221,13 @@ def ingest_data(bucket, prefix, run_id):
    except Exception as e:
       log.warning(f'Error with ingestion loop: {e}')
       trc = traceback.format_exc()
-      # cleanup(data_dir)
-      send_sos(prefix, bucket, run_id, trc, True)
-      # sys.exit(1)
+      cleanup(data_dir)
+      send_sos(prefix, bucket, run_id, trc, False)
+      sys.exit(1)
 
    log.info(f'Ingestion stalled due to {STALLED} updates with no new files')
    cleanup(data_dir)
-   send_sos(prefix, bucket, run_id, "", True)
+   send_sos(prefix, bucket, run_id, "", False)
 
 if __name__ == '__main__':
    setup_logging()

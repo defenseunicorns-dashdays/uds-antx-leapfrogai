@@ -10,6 +10,8 @@ log = get_logger()
 
 VALKEY_ENGINE = None
 
+STATUS_KEY = "current_status"
+
 TIME_ZONE = "US/Pacific"
 
 def create_valkey_connection():

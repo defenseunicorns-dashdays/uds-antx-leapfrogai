@@ -3,8 +3,9 @@ import numpy as np
 import random
 import string
 import os
+import time
 from comms.valkey import get_output_frame, set_output_frame, set_json_data
-from comms.valkey import get_json_data, TIME_ZONE
+from comms.valkey import get_json_data, TIME_ZONE, STATUS_KEY
 from comms.valkey import key_exists, wipe_key, publish_message
 from comms.s3 import WRITE_BUCKET, upload_file
 from util.logs import get_logger
@@ -41,6 +42,20 @@ def get_valkey_keys(prefix, run_id):
       'output_key': f'{prefix}_output',
       'metrics_key': f'{run_id}_metrics'
          }
+
+def get_current_run():
+   status = get_json_data(STATUS_KEY)
+   return status["prefix"], status["run_id"], status["status"]
+
+def get_status():
+   msg = {"message_type":"status"}
+   #The process should keep track of this
+   #But I'm giving it a chance to update in case
+   #There is an uncaught exception
+   publish_message("events", msg)
+   time.sleep(.2)
+   return get_current_run()
+
 
 def wipe_data(key_prefix, run_id):
    keys = get_valkey_keys(key_prefix, run_id)
@@ -81,46 +96,22 @@ def get_current_state(valkeys):
       delay_reason = delay_reason.values[-1]
    return current_state, delay_reason   
 
-def get_prefix():
-   ts = pd.Timestamp("now", tz=TIME_ZONE)
+def parse_date(date):
+   month = int(ts[:2])
+   day = int(ts[2:4])
+   year = int(ts[4:])
+   return pd.Timestamp(month=month, day=day, year=year, tz=TIME_ZONE)
+
+def get_prefix(date):
+   if date is None:
+      ts = pd.Timestamp("now", tz=TIME_ZONE)
+   else:
+      ts = date
    y = ts.year
    m = ts.month
    d = ts.day
    prefix = f"Distribution-Statement-D/{y}/{m:02d}/{d:02d}/"
    return prefix
-
-#TODO: track this in valkey
-def get_run_id():
-   return 1
-
-def get_current_run_id():
-   return 1
-
-def init_run():
-   run_id = get_run_id()
-   prefix = get_prefix()
-   keys = get_valkey_keys(prefix, run_id)
-   init_outputs(keys)
-
-   #Kick off ingestion
-   msg = {
-      "message_type": "start",
-      "bucket": os.environ.get("READ_BUCKET", "antx"),
-      "prefix": prefix,
-      "run_id": run_id
-   }
-   publish_message("events", msg)
-
-def end_run():
-   prefix = get_prefix()
-   run_id = get_run_id()
-   msg = {
-      "message_type": "end",
-      "bucket": os.environ.get("READ_BUCKET", "antx"),
-      "prefix": prefix,
-      "run_id": run_id
-   }
-   publish_message("events", msg)
 
 def format_for_push(df: pd.DataFrame):
    df['start'] = df['start'].dt.strftime(OUTPUT_STRING_FORMAT)
@@ -285,23 +276,4 @@ def get_state(df):
    return State(**{
       "currentState": CurrentState(current_state),
       "delay": dly
-   })
-
-def api_update():
-   prefix = get_prefix()
-   run_id = get_current_run_id()
-   valkeys = get_valkey_keys(prefix, run_id)
-   df = get_output_frame(valkeys["output_key"])
-   metric_dict = get_json_data(valkeys["metrics_key"])
-   metadata = create_metadata(df)
-   metrics = create_metrics(metric_dict)
-   transcripts = Transcription(**{
-      "speechToText": get_transcriptions(df)
-   })
-   state = get_state(df)
-   return Update(**{
-      "metadata": metadata,
-      "state": state,
-      "transcription": transcripts,
-      "performanceMetrics": metrics
    })

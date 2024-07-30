@@ -57,6 +57,10 @@ class LastUpdate(BaseModel):
    lastState: State = Field(description="The current state")
    runID: str = Field(description="the run_id of the run to show data for")
 
+class Run(BaseModel):
+   date: str = Field(description = "MMDDYYYY date to look for audio files")
+   runID: int = Field(description = "Internal runID for debugging")
+
 class MetricTracker:
    def __init__(self):
       self.min_transcription = 9999999
