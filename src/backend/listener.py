@@ -4,7 +4,7 @@ import os
 import json
 import traceback
 from subprocess import Popen
-from util.loaders import wipe_data
+from util.loaders import wipe_data, get_current_run
 
 
 log = get_logger()
@@ -15,7 +15,9 @@ class Listener:
       self.sub_channel = os.environ.get('SUB_CHANNEL', 'events')
       self.process = None
       self.prefix = None
-      self.run_id = 0
+      prefix, run_id, status = get_current_run()
+      log.info(f"Initializing with run_id set to {run_id}")
+      self.run_id = run_id
 
    def spawn_process(self, bucket, key_prefix, run_id):
       self.run_id = run_id
@@ -83,8 +85,9 @@ class Listener:
          self.spawn_process(bucket, key_prefix, run_id+1)
 
    def push_status(self):
-      run_id = self.run_id
-      prefix = self.prefix 
+      prefix, run_id, status = get_current_run()
+      if run_id != self.run_id:
+         log.warning(f"RUN_ID MISMATCH IN LISTENER: {self.run_id} listener ID does not match {run_id}")
       proc = self.process
       if not proc:
          status = "Available"
