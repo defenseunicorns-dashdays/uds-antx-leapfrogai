@@ -207,7 +207,6 @@ def ingest_data(bucket, prefix, run_id):
       valkey_keys = get_valkey_keys(prefix, run_id)
       log.debug(f"valkey_keys: {valkey_keys}")
       data_dir = setup_ingestion(prefix)
-      init_outputs(valkey_keys)
    except Exception as e:
       log.warning(f'Error with ingestion setup: {e}')
       trc = traceback.format_exc()

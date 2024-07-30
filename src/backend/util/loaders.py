@@ -65,9 +65,13 @@ def wipe_data(key_prefix, run_id):
    for k, v in keys.items():
       wipe_key(v)
 
-def init_frame():
+def init_frame(date:pd.Timestamp):
    log.info(f'Initializing data frame')
-   start_time = pd.Timestamp('now', tz=TIME_ZONE)
+   start_time = date
+   now = pd.Timestamp('now', tz=TIME_ZONE)
+   start_time.replace(hour = now.hour)
+   start_time.replace(minute = now.minute)
+   start_time.replace(second = now.second)
    end_time = start_time
    state = CurrentState.trial_start.value
    seconds_to_state_change = 75
@@ -226,14 +230,14 @@ def test_update(output_key, metrics_key):
    metrics.avg_infer = data[5]
    push_metrics(metrics, metrics_key)
 
-def init_outputs(valkey_keys):
+def init_outputs(valkey_keys, date):
    files_key = valkey_keys['files_key']
    output_key = valkey_keys['output_key']
    metrics_key = valkey_keys['metrics_key']
    if not key_exists(files_key):
       set_json_data(files_key, [])
    if not key_exists(output_key):
-      df = init_frame()
+      df = init_frame(date)
       set_output_frame(output_key, df)
    if not key_exists(metrics_key):
       setup_metrics(metrics_key)

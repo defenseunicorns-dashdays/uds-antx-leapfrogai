@@ -49,7 +49,7 @@ def init_run(date):
    prefix = get_prefix(date)
    run_id += 1
    keys = get_valkey_keys(prefix, run_id)
-   init_outputs(keys)
+   init_outputs(keys, date)
 
    #Kick off ingestion
    msg = {
