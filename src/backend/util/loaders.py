@@ -59,7 +59,6 @@ def get_status():
    time.sleep(.2)
    return get_current_run()
 
-
 def wipe_data(key_prefix, run_id):
    keys = get_valkey_keys(key_prefix, run_id)
    log.debug(f'Deleting keys: {keys}')
@@ -99,7 +98,15 @@ def get_current_state(valkeys):
       delay_reason = delay_reason.values[-1]
    return current_state, delay_reason   
 
-def parse_date(date):
+def build_date_response(date):
+   if date is None:
+      date = pd.Timestamp("now", tz=TIME_ZONE)
+   month = date.month
+   day = date.day
+   year = date.year
+   return f"{month:02d}{day:02d}{year}"
+
+def parse_date(ts):
    month = int(ts[:2])
    day = int(ts[2:4])
    year = int(ts[4:])

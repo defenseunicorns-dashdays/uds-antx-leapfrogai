@@ -18,7 +18,8 @@ class Listener:
       self.run_id = 0
 
    def spawn_process(self, bucket, key_prefix, run_id):
-      self.run_id += run_id
+      self.run_id = run_id
+      log.info(f'{self.run_id}, {run_id}')
       self.prefix = key_prefix
       cmd = ["python3", "ingest.py", bucket, key_prefix, str(self.run_id)]
       log.info(f'Creating process with command: {cmd}')

@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from util.objects import Update, Run, Transcription
 from util.loaders import get_status, get_prefix, get_valkey_keys, init_outputs
-from util.loaders import get_current_run, get_output_frame, create_metadata
+from util.loaders import get_current_run, get_output_frame, create_metadata, build_date_response
 from util.loaders import create_metrics, get_transcriptions, get_state, parse_date
 from comms.valkey import publish_message, get_json_data
 import os
+import traceback
 import logging
 
 tags = [
@@ -28,8 +29,9 @@ async def start(date:str | None = None) -> Run:
          return init_run(dt)
       except Exception as e:
          log.warning(f"Error parsing date: {date}")
+         log.warning(traceback.format_exc())
          raise HTTPException(status_code=400, detail="date query param must be MMDDYYYY format")
-   return init_run(dt)
+   return init_run(None)
 
 @app.get("/end/", status_code=200)
 async def end() -> Update:
@@ -41,11 +43,11 @@ async def update() -> Update:
    return api_update()
 
 def init_run(date):
-   status = get_status()
-   if status["status"] == "Running":
+   prefix, run_id, status = get_status()
+   if status == "Running":
       raise HTTPException(status_code=409, detail="Ingestion process is already running!")
    prefix = get_prefix(date)
-   run_id = status["run_id"] + 1
+   run_id += 1
    keys = get_valkey_keys(prefix, run_id)
    init_outputs(keys)
 
@@ -57,6 +59,8 @@ def init_run(date):
       "run_id": run_id
    }
    publish_message("events", msg)
+   date = build_date_response(date)
+   return Run(**{"date":date, "runID":run_id})
 
 def api_update():
    prefix, run_id, status = get_current_run()
@@ -77,11 +81,9 @@ def api_update():
    })
 
 def end_run():
-   status = get_status()
-   if status["status"] != "Running":
+   prefix, run_id, status = get_status()
+   if status != "Running":
       raise HTTPException(status_code=400, detail="No running processes found")
-   prefix = status["prefix"]
-   run_id = status["run_id"]
    msg = {
       "message_type": "end",
       "bucket": os.environ.get("READ_BUCKET", "antx"),
