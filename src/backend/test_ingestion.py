@@ -63,7 +63,7 @@ if __name__ == '__main__':
    log.info(f"Running testing with mode={mode}, prefix={prefix}, run_id={run_id}")
    if mode == "setup":
       wipe_data(prefix, run_id)
-      clear_s3()
+      #clear_s3()
       valkey_keys = get_valkey_keys(prefix, run_id)
       log.info(f"{valkey_keys}")
       init_outputs(valkey_keys, date)
