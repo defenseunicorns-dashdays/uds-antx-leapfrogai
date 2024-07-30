@@ -20,22 +20,43 @@
           "description": "Current running clock in HH:MM:SS format."
         }
       },
-      "required": ["eventStart", "timeToNextEvent", "runningClock"]
+      "required": [
+        "eventStart",
+        "timeToNextEvent",
+        "runningClock"
+      ]
     },
     "state": {
       "type": "object",
       "properties": {
         "currentState": {
           "type": "string",
-          "enum": ["Pre Trial Start", "Trial Start", "Trial End", "Delay Start", "Delay End", "In Transit", "Mistrial", "RTB"],
+          "enum": [
+            "Pre Trial Start",
+            "Trial Start",
+            "Trial End",
+            "Delay Start",
+            "Delay End",
+            "In Transit",
+            "Mistrial",
+            "RTB"
+          ],
           "description": "The current state of the event."
         },
         "delay": {
-          "type": ["object", "null"],
+          "type": [
+            "object",
+            "null"
+          ],
           "properties": {
             "reason": {
               "type": "string",
-              "enum": ["vendor issues causing delay in trial execution", "Unauthorized craft enters OP area (NPC = non-personnel craft)", "Boat experiences network drops or software crashes", "Boat loses power, must be towed out of OP area"],
+              "enum": [
+                "vendor issues causing delay in trial execution",
+                "Unauthorized craft enters OP area (NPC = non-personnel craft)",
+                "Boat experiences network drops or software crashes",
+                "Boat loses power, must be towed out of OP area"
+              ],
               "description": "The reason for the delay."
             },
             "predictedResolutionTime": {
@@ -44,17 +65,30 @@
               "description": "Predicted resolution time in ISO 8601 format."
             }
           },
-          "required": ["reason", "predictedResolutionTime"]
+          "required": [
+            "reason",
+            "predictedResolutionTime"
+          ]
         }
       },
-      "required": ["currentState"]
+      "required": [
+        "currentState"
+      ]
     },
     "transcription": {
-      "type": "array",
-      "items": {
-        "type": "string"
+      "type": "object",
+      "properties": {
+        "speechToText": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Time-ordered transcription feed."
+        }
       },
-      "description": "Time-ordered transcription feed."
+      "required": [
+        "speechToText"
+      ]
     },
     "performanceMetrics": {
       "type": "object",
@@ -75,7 +109,11 @@
               "description": "Average time to transcribe per token."
             }
           },
-          "required": ["min", "max", "avg"]
+          "required": [
+            "min",
+            "max",
+            "avg"
+          ]
         },
         "timeToInference": {
           "type": "object",
@@ -93,11 +131,23 @@
               "description": "Average time to inference."
             }
           },
-          "required": ["min", "max", "avg"]
+          "required": [
+            "min",
+            "max",
+            "avg"
+          ]
         }
       },
-      "required": ["timeToTranscribePerToken", "timeToInference"]
+      "required": [
+        "timeToTranscribePerToken",
+        "timeToInference"
+      ]
     }
   },
-  "required": ["metadata", "state", "transcription", "performanceMetrics"]
+  "required": [
+    "metadata",
+    "state",
+    "transcription",
+    "performanceMetrics"
+  ]
 }

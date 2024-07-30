@@ -51,10 +51,13 @@ export interface EventInformation {
     } | null;
     [k: string]: unknown;
   };
-  /**
-   * Time-ordered transcription feed.
-   */
-  transcription: string[];
+  transcription: {
+    /**
+     * Time-ordered transcription feed.
+     */
+    speechToText: string[];
+    [k: string]: unknown;
+  };
   performanceMetrics: {
     timeToTranscribePerToken: {
       /**

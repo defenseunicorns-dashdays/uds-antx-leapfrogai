@@ -10,8 +10,8 @@ from comms.s3 import get_objects, copy_from_s3
 from comms.lfai import build_transcribe_request, chat_completion
 from util.logs import get_logger, setup_logging
 from util.loaders import init_outputs, push_data, get_valkey_keys, test_update
-from util.loaders import push_logs, get_current_state
-from util.objects import MetricTracker
+from util.loaders import push_logs, get_current_state, TIME_ZONE
+from util.objects import MetricTracker, CurrentState
 from pathlib import Path
 
 log = get_logger()
@@ -159,6 +159,9 @@ def process_batch(keys: list, valkey_keys:dict, bucket:str,
          data_dict[track] = txt
          processed_files.append(key)
       try:
+         if current_state == CurrentState.pre_trial_start.value:
+            current_state = CurrentState.trial_start.value
+            data_dict["state"] = current_state
          data_dict = chat_completion(data_dict)
          current_state = data_dict["state"]
          delay_type = data_dict["delay_type"]

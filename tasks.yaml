@@ -38,3 +38,10 @@ tasks:
         with:
           path: src/ui
           options: -o build
+
+  - name: update-ui
+    description: Build the UI image, redeploy, and cycle the pod
+    actions:
+      - task: package-ui
+      - cmd: uds zarf package deploy build/zarf-package-ai-antx-ui-*-0.0.1.tar.zst --confirm
+      - cmd: uds zarf tools kubectl delete pod -n antx-ui $(uds zarf tools kubectl get pods -n antx-ui | grep ui- | awk '{print $1}')

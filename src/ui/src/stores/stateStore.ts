@@ -5,13 +5,15 @@ export const eventStore = writable<EventInformation>({
 	metadata: {
 		eventStart: new Date().toDateString(),
 		timeToNextEvent: '00:00',
-		runningClock: 'HH:MM:SS'
+		runningClock: '00:00:00'
 	},
 	state: {
 		currentState: 'Pre Trial Start',
 		delay: null
 	},
-	transcription: [],
+	transcription: {
+		speechToText: []
+	},
 	performanceMetrics: {
 		timeToTranscribePerToken: {
 			min: 0,

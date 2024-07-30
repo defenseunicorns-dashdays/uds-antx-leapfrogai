@@ -6,7 +6,7 @@ RUN pnpm i
 COPY . .
 ENV NODE_ENV=production
 RUN pnpm run build
-RUN pnpm prune  --production
+RUN pnpm prune --production
 
 FROM cgr.dev/chainguard/node:latest
 

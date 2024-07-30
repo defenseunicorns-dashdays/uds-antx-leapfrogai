@@ -7,24 +7,10 @@
 	import { Api } from '$lib/api';
 	import { updateEventStore } from '../stores/stateStore';
 
-	const testimonials = [
-		{
-			title1: 'Event Start',
-			title2: '00:00:00 Z'
-		},
-		{
-			title1: 'Time to next State',
-			title2: '00:00:00 Z'
-		},
-		{
-			title1: 'Running Clock',
-			title2: '00:00:00 Z'
-		}
+	const delayStates = [
+		{ state: 'Delay Start', isCurrent: false },
+		{ state: 'Delay End', isCurrent: false }
 	];
-
-	const states = ['Pre Trial Start', 'Trial Start', 'In Transit', 'Mistrial', 'Trial End', 'RTB'];
-
-	const delayStates = ['Delay Start', 'Delay End'];
 
 	const dummyTranscript = [
 		'Alpha: Tango 1, this is Bravo Actual, over.',
@@ -50,11 +36,17 @@
 		const newData = await Api.update();
 		updateEventStore(newData);
 	}
+
+	function startUpdateInterval() {
+		setInterval(fetchUpdate, 3000);
+	}
+
+	startUpdateInterval();
 </script>
 
-<ClocksCard {testimonials} />
-<StateCard list={states} />
-<StateCard list={delayStates} />
+<ClocksCard />
+<StateCard />
+<!-- <StateCard list={delayStates} /> -->
 
 <Accordion multiple class="mx-auto w-5/6">
 	<AccordionItem open>
@@ -66,15 +58,3 @@
 		<PerformanceCard />
 	</AccordionItem>
 </Accordion>
-
-<div class="flex justify-center">
-	<Button class="m-2 mt-8 border dark:bg-gray-700" color="primary" size="lg" on:click={Api.start}
-		>Start</Button
-	>
-	<Button class="m-2 mt-8 border dark:bg-gray-700" color="primary" size="lg" on:click={fetchUpdate}
-		>Update</Button
-	>
-	<Button class="m-2 mt-8 border dark:bg-gray-700" color="primary" size="lg" on:click={Api.end}
-		>End</Button
-	>
-</div>
