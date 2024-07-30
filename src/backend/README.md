@@ -16,6 +16,17 @@ There is a testing branch called `testing/dummy-api` that will very simply creat
 * `/update/` will create a new row of data and return the most recent data.
 * `/end/` will return the most recent data.
 
+To use the `date` query parameter to initiate ingestion for a different date than the current date, use the follwoing command:
+```bash
+curl localhost:8000/start/?date=MMDDYYYY
+```
+example:
+```bash
+curl localhost:8000/start/?date=07292024
+```
+
+This will kick off ingestion looking only for S3 keys that start with the supplied date.
+
 ## Testing environment
 Use the following targets and intstructions for `uds run` to bring up a dev deployment from `/src/backend`.
 * `uds-up`: uses `test/uds-config.yaml` to create the proper minio buckets and credentials
