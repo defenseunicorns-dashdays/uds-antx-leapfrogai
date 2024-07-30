@@ -50,7 +50,7 @@ def send_sos(prefix, bucket,run_id, trc, restart):
            'bucket':bucket, 'run_id': run_id,
            'traceback': trc, 'restart': restart}
    publish_message(MESSAGE_CHANNEL, data)
-   status = {"run_id":run_id, "prefix":prefix, "status":"Exiting"}
+   status = {"run_id":int(run_id), "prefix":prefix, "status":"Exiting"}
    set_json_data(STATUS_KEY, status)
 
 def setup_ingestion(prefix):
@@ -154,7 +154,7 @@ def process_batch(keys: list, valkey_keys:dict, bucket:str,
             log.debug(f"{key}:{txt}")
          except Exception as e:
             log.warning(f'Error transcribing key {key}: {e}')
-            log.warning(traceback.format_exec())
+            log.warning(traceback.format_exc())
             txt = ""
          data_dict[track] = txt
          processed_files.append(key)
@@ -165,7 +165,7 @@ def process_batch(keys: list, valkey_keys:dict, bucket:str,
          metrics.update_inferences(data_dict["inference_seconds"])
       except Exception as e:
          log.warning(f'Error inferring with data {data_dict}: {e}')
-         log.warning(traceback.format_exec())
+         log.warning(traceback.format_exc())
          data_dict["time_to_change"] = "00:00"
          data_dict["inference_seconds"] = 0
       set_json_data(valkey_keys["files_key"], processed_files)
@@ -234,9 +234,7 @@ if __name__ == '__main__':
    parser = argparse.ArgumentParser(description="postional args: bucket, prefix, run_id")
    parser.add_argument('bucket', help="s3 bucket name")
    parser.add_argument('prefix', help="s3 key prefix to check")
-   parser.add_argument('run_id', help="run_id to help keep data stored separately")
+   parser.add_argument('run_id', type=int, help="run_id to help keep data stored separately")
    args = parser.parse_args()
    log.info(f"Spawned ingestion with args: {args}")
-   time.sleep(120)
-   send_sos(args.prefix, args.bucket, args.run_id, "", False)
-   #ingest_data(args.bucket, args.prefix, args.run_id)
+   ingest_data(args.bucket, args.prefix, args.run_id)

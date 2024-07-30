@@ -3,7 +3,7 @@ import numpy as np
 import os
 from comms.s3 import upload_file, READ_BUCKET, get_objects, delete_key
 from util.logs import setup_logging, get_logger
-from util.loaders import get_prefix, wipe_data
+from util.loaders import get_prefix, wipe_data, get_current_run, parse_date
 import time
 from subprocess import Popen
 import argparse
@@ -29,8 +29,7 @@ def upload_dummy_data(prefix, iters):
          upload_file(file_path, key, READ_BUCKET)
       time.sleep(5)
 
-def spawn_ingestion(prefix):
-   run_id = 1
+def spawn_ingestion(prefix, run_id):
    bucket = READ_BUCKET
    cmd = ["python3", "ingest.py", bucket, prefix, str(run_id)]
    log.info(f'Spawning process: {cmd}')
@@ -46,18 +45,26 @@ def clear_s3():
 
 if __name__ == '__main__':
    setup_logging()
-   prefix = get_prefix()
    parser = argparse.ArgumentParser(description="testing arguments: mode can be setup, start_ingestion, start_upload")
    parser.add_argument("mode")
+   parser.add_argument("date")
    args = parser.parse_args()
    mode = args.mode
-   log.info(f"Running testing with mode={mode}")
+   if "date" in args:
+      date = args.date
+      date = parse_date(date)
+   else:
+      date = None
+   prefix = get_prefix(date)
+   _, run_id, status = get_current_run()
+   run_id = int(run_id) + 1
+   log.info(f"Running testing with mode={mode}, prefix={prefix}, run_id={run_id}")
    if mode == "setup":
-      #wipe_data(prefix, 1)
-      #clear_s3()
+      wipe_data(prefix, run_id)
+      clear_s3()
       upload_dummy_data(prefix, 1)
    elif mode == "start_ingestion":
-      spawn_ingestion(prefix)
+      spawn_ingestion(prefix, run_id)
    elif mode == "start_upload":
       upload_dummy_data(prefix, 20)
    else:

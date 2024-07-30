@@ -22,7 +22,7 @@ log = get_logger()
 URL_TRANSCRIPTION = 'http://api.leapfrogai.svc.cluster.local:8080/openai/v1/audio/transcriptions'
 URL_INFERENCE = 'http://api.leapfrogai.svc.cluster.local:8080/openai/v1/chat/completions'
 
-TEST_DEPLOYMENT = int(os.environ.get("IS_TEST_DEPLOYMENT", 0))
+TEST_DEPLOYMENT = 1#int(os.environ.get("IS_TEST_DEPLOYMENT", 0))
 
 # need to decide on the naming convention for the API key
 LEAPFROG_API_KEY = os.environ.get('LEAPFROG_API_KEY', 'test')
