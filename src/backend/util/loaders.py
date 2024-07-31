@@ -244,8 +244,7 @@ def init_outputs(valkey_keys):
    if not key_exists(output_key):
       df = init_frame()
       set_output_frame(output_key, df)
-   if not key_exists(metrics_key):
-      setup_metrics(metrics_key)
+   setup_metrics(metrics_key)
 
 def create_metrics(metrics):
    data = {
