@@ -83,6 +83,7 @@ def ingest_file(key: str,
    if not success:
       log.warning(f'Skipping key {key}: could not copy from s3')
       return False
+   metrics.update_downloads(elapsed_time)
    result = build_transcribe_request(new_path)
    log.info(result)
    perf = result["performanceMetrics"]

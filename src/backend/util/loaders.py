@@ -159,6 +159,11 @@ def push_metrics(metrics: MetricTracker, metric_key: str):
          "min": metrics.min_infer,
          "max": metrics.max_infer,
          "avg": metrics.max_infer
+      },
+      "download": {
+         "min": metrics.min_download,
+         "max": metrics.max_download,
+         "avg": metrics.avg_download
       }
    }
    set_json_data(metric_key, data)
@@ -171,6 +176,11 @@ def setup_metrics(metric_key):
          "avg": 0
       },
       "inference": {
+         "min": 0,
+         "max": 0,
+         "avg": 0
+      },
+      "download": {
          "min": 0,
          "max": 0,
          "avg": 0
@@ -240,7 +250,8 @@ def init_outputs(valkey_keys):
 def create_metrics(metrics):
    data = {
       "timeToTranscribePerToken": Metric(**metrics["transcription"]),
-      "timeToInference": Metric(**metrics["inference"])
+      "timeToInference": Metric(**metrics["inference"]),
+      "timeToDownload": Metric(**metrics["download"])
    }
    return PerformanceMetrics(**data)
 
