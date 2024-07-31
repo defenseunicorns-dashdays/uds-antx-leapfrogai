@@ -45,7 +45,12 @@ def get_valkey_keys(prefix, run_id):
 
 def get_current_run():
    if not key_exists(STATUS_KEY):
-      return "", 0, "Available"
+      data = {
+         "prefix": get_prefix,
+         "run_id": 0,
+         "status": "Available"
+      }
+      set_json_data(STATUS_KEY, data)
    status = get_json_data(STATUS_KEY)
    return status["prefix"], status["run_id"], status["status"]
 
