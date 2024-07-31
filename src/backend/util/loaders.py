@@ -123,7 +123,7 @@ def parse_date(ts):
    year = int(ts[4:])
    return pd.Timestamp(month=month, day=day, year=year, tz=TIME_ZONE)
 
-def get_prefix(date):
+def get_prefix(date=None):
    if date is None:
       ts = pd.Timestamp("now", tz=TIME_ZONE)
    else:
