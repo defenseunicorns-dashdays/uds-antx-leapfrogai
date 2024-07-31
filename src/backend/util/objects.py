@@ -98,6 +98,7 @@ class MetricTracker:
          "max": self.max_download,
          "avg": self.avg_download
       }
+      return data
 
    def update_transcriptions(self, seconds, tokens):
       self.num_tokens += tokens
