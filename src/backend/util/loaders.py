@@ -46,7 +46,7 @@ def get_valkey_keys(prefix, run_id):
 def get_current_run():
    if not key_exists(STATUS_KEY):
       data = {
-         "prefix": get_prefix,
+         "prefix": get_prefix(),
          "run_id": 0,
          "status": "Available"
       }
