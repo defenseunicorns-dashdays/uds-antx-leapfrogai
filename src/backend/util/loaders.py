@@ -44,11 +44,10 @@ def get_valkey_keys(prefix, run_id):
          }
 
 def get_current_run():
-   status = get_json_data(STATUS_KEY)
-   if status is not None:
-      return status["prefix"], status["run_id"], status["status"]
-   else:
+   if not key_exists(STATUS_KEY):
       return "", 0, "Available"
+   status = get_json_data(STATUS_KEY)
+   return status["prefix"], status["run_id"], status["status"]
 
 def get_status():
    msg = {"message_type":"status"}

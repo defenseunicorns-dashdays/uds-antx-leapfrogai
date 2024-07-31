@@ -15,10 +15,7 @@ class Listener:
       self.sub_channel = os.environ.get('SUB_CHANNEL', 'events')
       self.process = None
       self.prefix = None
-      if key_exists(STATUS_KEY):
-         prefix, run_id, status = get_current_run()
-      else:
-         run_id = 0
+      prefix, run_id, status = get_current_run()
       log.info(f"Initializing with run_id set to {run_id}")
       self.run_id = run_id
 
