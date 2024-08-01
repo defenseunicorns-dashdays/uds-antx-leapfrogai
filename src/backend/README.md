@@ -12,10 +12,8 @@ graph LR
         D[Ingestion]
         E[API]
     end
-    C <-->|Data| E
-    C <-->|Data| D
-    C -->|Messages| D
-    C <--|Messages| E
+    C <-->|Data,Messages| E
+    C <-->|Data,Messages| D
     D <--|Audio| F
     D -->|Output| G
 ```
