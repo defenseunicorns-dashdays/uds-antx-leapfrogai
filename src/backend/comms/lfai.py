@@ -274,6 +274,8 @@ def _format_response(response: requests.models.Response,
    if data_dict["state"].startswith("Delay"):
       if "delay_type" in state_response:
          data_dict["delay_type"] = state_response["delay_type"]
+      else:
+         data_dict["delay_type"] = random.choice(list(DelayReason)).value
    if "time_to_change" in state_response:
       data_dict["time_to_change"] = state_response["time_to_change"]
    else:
