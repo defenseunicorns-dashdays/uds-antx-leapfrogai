@@ -271,16 +271,9 @@ def _format_response(response: requests.models.Response,
    log.info(state_response)
    if "predicted_state" in state_response:
       data_dict["state"] = state_response["predicted_state"]
-      return dummy_inference(data_dict)
    if data_dict["state"].startswith("Delay"):
       if "delay_type" in state_response:
          data_dict["delay_type"] = state_response["delay_type"]
-      else:
-         try:
-            data_dict["delay_type"] = state_response["delay_type"]
-         except:
-            data_dict["delay_type"] = random.choice(list(DelayReason)).value
-            log.debug(f"Did not find delay type in response, defaulting to random delay type.")
    if "time_to_change" in state_response:
       data_dict["time_to_change"] = state_response["time_to_change"]
    else:
