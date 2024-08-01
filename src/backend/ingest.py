@@ -184,7 +184,7 @@ def ingest_loop(bucket, prefix, valkey_keys, data_dir):
       if len(files) == 0:
          num_no_updates += 1
          log.info(f"No new S3 keys to be processed")
-         time.sleep(2)
+         time.sleep(10)
          # if num_no_updates == 1:
          #    push_logs(valkey_keys["output_key"])
          continue

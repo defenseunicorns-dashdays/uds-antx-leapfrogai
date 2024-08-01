@@ -5,6 +5,7 @@ from comms.s3 import upload_file, READ_BUCKET, get_objects, delete_key
 from util.logs import setup_logging, get_logger
 from util.loaders import get_prefix, wipe_data, get_current_run, parse_date
 from util.loaders import init_outputs, get_valkey_keys
+from comms.valkey import wipe_key, STATUS_KEY
 import time
 from subprocess import Popen
 import argparse
@@ -58,6 +59,7 @@ if __name__ == '__main__':
    if date:
       date = parse_date(date)
    prefix = get_prefix(date)
+   wipe_key(STATUS_KEY)
    _, run_id, status = get_current_run()
    run_id = int(run_id) + 1
    log.info(f"Running testing with mode={mode}, prefix={prefix}, run_id={run_id}")
