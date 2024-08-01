@@ -14,7 +14,7 @@ graph LR
     end
     C <-->|Data,Messages| E
     C <-->|Data,Messages| D
-    D <--|Audio| F
+    F -->|Audio| D
     D -->|Output| G
 ```
 
