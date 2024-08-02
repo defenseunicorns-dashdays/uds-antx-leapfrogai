@@ -164,7 +164,10 @@ def process_batch(keys: list, valkey_keys:dict, bucket:str,
             data_dict["state"] = current_state
          data_dict = chat_completion(data_dict)
          current_state = data_dict["state"]
-         delay_type = data_dict["delay_type"]
+         if not (current_state == CurrentState.delay_start.value or current_state == CurrentState.delay_end.value):
+           delay_type = ""
+         else:
+           delay_type =  data_dict["delay_type"]
          metrics.update_inferences(data_dict["inference_seconds"])
       except Exception as e:
          log.warning(f'Error inferring with data {data_dict}: {e}')

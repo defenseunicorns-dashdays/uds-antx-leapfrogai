@@ -170,7 +170,7 @@ def push_metrics(metrics: MetricTracker, metric_key: str):
       "inference": {
          "min": metrics.min_infer,
          "max": metrics.max_infer,
-         "avg": metrics.max_infer
+         "avg": metrics.avg_infer
       }
    }
    set_json_data(metric_key, data)
