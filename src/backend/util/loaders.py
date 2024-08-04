@@ -3,8 +3,9 @@ import numpy as np
 import random
 import string
 import os
+import time
 from comms.valkey import get_output_frame, set_output_frame, set_json_data
-from comms.valkey import get_json_data, TIME_ZONE
+from comms.valkey import get_json_data, TIME_ZONE, STATUS_KEY
 from comms.valkey import key_exists, wipe_key, publish_message
 from comms.s3 import WRITE_BUCKET, upload_file
 from util.logs import get_logger
@@ -42,15 +43,42 @@ def get_valkey_keys(prefix, run_id):
       'metrics_key': f'{run_id}_metrics'
          }
 
+def get_current_run():
+   if not key_exists(STATUS_KEY):
+      data = {
+         "prefix": get_prefix(),
+         "run_id": 0,
+         "status": "Available"
+      }
+      set_json_data(STATUS_KEY, data)
+   status = get_json_data(STATUS_KEY)
+   return status["prefix"], status["run_id"], status["status"]
+
+def get_status():
+   msg = {"message_type":"status"}
+   #The process should keep track of this
+   #But I'm giving it a chance to update in case
+   #There is an uncaught exception
+   publish_message("events", msg)
+   time.sleep(.2)
+   return get_current_run()
+
 def wipe_data(key_prefix, run_id):
    keys = get_valkey_keys(key_prefix, run_id)
    log.debug(f'Deleting keys: {keys}')
    for k, v in keys.items():
       wipe_key(v)
 
-def init_frame():
+def init_frame(date:pd.Timestamp):
    log.info(f'Initializing data frame')
-   start_time = pd.Timestamp('now', tz=TIME_ZONE)
+   now = pd.Timestamp('now', tz=TIME_ZONE)
+   if date:
+      start_time = date
+      start_time.replace(hour = now.hour)
+      start_time.replace(minute = now.minute)
+      start_time.replace(second = now.second)
+   else:
+      start_time = now
    end_time = start_time
    state = CurrentState.trial_start.value
    seconds_to_state_change = 75
@@ -81,46 +109,30 @@ def get_current_state(valkeys):
       delay_reason = delay_reason.values[-1]
    return current_state, delay_reason   
 
-def get_prefix():
-   ts = pd.Timestamp("now", tz=TIME_ZONE)
+def build_date_response(date):
+   if date is None:
+      date = pd.Timestamp("now", tz=TIME_ZONE)
+   month = date.month
+   day = date.day
+   year = date.year
+   return f"{month:02d}{day:02d}{year}"
+
+def parse_date(ts):
+   month = int(ts[:2])
+   day = int(ts[2:4])
+   year = int(ts[4:])
+   return pd.Timestamp(month=month, day=day, year=year, tz=TIME_ZONE)
+
+def get_prefix(date=None):
+   if date is None:
+      ts = pd.Timestamp("now", tz=TIME_ZONE)
+   else:
+      ts = date
    y = ts.year
    m = ts.month
    d = ts.day
    prefix = f"Distribution-Statement-D/{y}/{m:02d}/{d:02d}/"
    return prefix
-
-#TODO: track this in valkey
-def get_run_id():
-   return 1
-
-def get_current_run_id():
-   return 1
-
-def init_run():
-   run_id = get_run_id()
-   prefix = get_prefix()
-   keys = get_valkey_keys(prefix, run_id)
-   init_outputs(keys)
-
-   #Kick off ingestion
-   msg = {
-      "message_type": "start",
-      "bucket": os.environ.get("READ_BUCKET", "antx"),
-      "prefix": prefix,
-      "run_id": run_id
-   }
-   publish_message("events", msg)
-
-def end_run():
-   prefix = get_prefix()
-   run_id = get_run_id()
-   msg = {
-      "message_type": "end",
-      "bucket": os.environ.get("READ_BUCKET", "antx"),
-      "prefix": prefix,
-      "run_id": run_id
-   }
-   publish_message("events", msg)
 
 def format_for_push(df: pd.DataFrame):
    df['start'] = df['start'].dt.strftime(OUTPUT_STRING_FORMAT)
@@ -158,7 +170,7 @@ def push_metrics(metrics: MetricTracker, metric_key: str):
       "inference": {
          "min": metrics.min_infer,
          "max": metrics.max_infer,
-         "avg": metrics.max_infer
+         "avg": metrics.avg_infer
       }
    }
    set_json_data(metric_key, data)
@@ -225,14 +237,14 @@ def test_update(output_key, metrics_key):
    metrics.avg_infer = data[5]
    push_metrics(metrics, metrics_key)
 
-def init_outputs(valkey_keys):
+def init_outputs(valkey_keys, date):
    files_key = valkey_keys['files_key']
    output_key = valkey_keys['output_key']
    metrics_key = valkey_keys['metrics_key']
    if not key_exists(files_key):
       set_json_data(files_key, [])
    if not key_exists(output_key):
-      df = init_frame()
+      df = init_frame(date)
       set_output_frame(output_key, df)
    if not key_exists(metrics_key):
       setup_metrics(metrics_key)
@@ -285,23 +297,4 @@ def get_state(df):
    return State(**{
       "currentState": CurrentState(current_state),
       "delay": dly
-   })
-
-def api_update():
-   prefix = get_prefix()
-   run_id = get_current_run_id()
-   valkeys = get_valkey_keys(prefix, run_id)
-   df = get_output_frame(valkeys["output_key"])
-   metric_dict = get_json_data(valkeys["metrics_key"])
-   metadata = create_metadata(df)
-   metrics = create_metrics(metric_dict)
-   transcripts = Transcription(**{
-      "speechToText": get_transcriptions(df)
-   })
-   state = get_state(df)
-   return Update(**{
-      "metadata": metadata,
-      "state": state,
-      "transcription": transcripts,
-      "performanceMetrics": metrics
    })

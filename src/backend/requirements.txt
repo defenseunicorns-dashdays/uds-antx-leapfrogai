@@ -3,6 +3,6 @@ numpy
 pathlib
 redis
 boto3
-fastapi
+fastapi[standard]
 pydantic
 requests

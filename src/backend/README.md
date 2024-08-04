@@ -1,7 +1,22 @@
 ## Backend structure
-* Zarf package: `zarf.yaml` and `test/zarf-config-dev.yaml` are provided to set up valkey and (eventually) the API deployment and custom listener (not implemented yet).  `Dockerfile` will eventually build the image that will be used for this zarf package. `values/valkey.py` contains the values file for the valkey deployment.
-* Code: `api.py` for the skeleton API, `ingest.py` for the skeleton ingestion engine, and `listener.py` for the skeleton listener.  `comms/` contains the s3, and valkey comms.  Leapfrog comms are not implemented yet.  `util/objects.py` contains data definitions for the api.
+* Zarf package: `zarf.yaml` and `test/zarf-config-dev.yaml` are provided to set up valkey, the API deployment and custom listener.  `Dockerfile` builds the image that will be used for this zarf package. `values/valkey.py` contains the values file for the valkey deployment.
+* Code: `api.py` has the API logic, `ingest.py` contains the ingestion engine, and `listener.py` for the main process running in the `ingestion` pod.  `comms/` contains the s3, Leapfrog, and valkey comms. `util/objects.py` contains data definitions for the api, `util/loaders.py` contains many pre-processing and getter / setter methods.
 * Testing: `tasks.yaml` contains uds tasks to create k3d-slim-dev with the correct minio setup for development.  It also contains code to build and deploy the zarf package (right now this just contains valkey)
+
+```mermaid
+graph LR
+    F[S3 Read Bucket]
+    G[S3 Write Bucket]
+    subgraph Runtime UDS-Core
+        C[Valkey]
+        D[Ingestion]
+        E[API]
+    end
+    C <-->|Data,Messages| E
+    C <-->|Data,Messages| D
+    F -->|Audio| D
+    D -->|Output| G
+```
 
 ## Swagger
 To access the backend API swagger docs, do the following steps:
@@ -15,6 +30,17 @@ There is a testing branch called `testing/dummy-api` that will very simply creat
 * `/start/` endpoint will init a new dataframe.
 * `/update/` will create a new row of data and return the most recent data.
 * `/end/` will return the most recent data.
+
+To use the `date` query parameter to initiate ingestion for a different date than the current date, use the follwoing command:
+```bash
+curl localhost:8000/start/?date=MMDDYYYY
+```
+example:
+```bash
+curl localhost:8000/start/?date=07292024
+```
+
+This will kick off ingestion looking only for S3 keys that start with the supplied date.
 
 ## Testing environment
 Use the following targets and intstructions for `uds run` to bring up a dev deployment from `/src/backend`.

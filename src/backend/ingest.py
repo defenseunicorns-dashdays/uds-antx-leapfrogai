@@ -5,7 +5,7 @@ import time
 import traceback
 import argparse
 import pandas as pd
-from comms.valkey import get_json_data, set_json_data, publish_message
+from comms.valkey import get_json_data, set_json_data, publish_message, STATUS_KEY, TIME_ZONE
 from comms.s3 import get_objects, copy_from_s3
 from comms.lfai import build_transcribe_request, chat_completion
 from util.logs import get_logger, setup_logging
@@ -50,6 +50,8 @@ def send_sos(prefix, bucket,run_id, trc, restart):
            'bucket':bucket, 'run_id': run_id,
            'traceback': trc, 'restart': restart}
    publish_message(MESSAGE_CHANNEL, data)
+   status = {"run_id":int(run_id), "prefix":prefix, "status":"Exiting"}
+   set_json_data(STATUS_KEY, status)
 
 def setup_ingestion(prefix):
    """Creates the tmp directory to download files from s3
@@ -165,7 +167,10 @@ def process_batch(keys: list, valkey_keys:dict, bucket:str,
             data_dict["state"] = current_state
          data_dict = chat_completion(data_dict)
          current_state = data_dict["state"]
-         delay_type = data_dict["delay_type"]
+         if not (current_state == CurrentState.delay_start.value or current_state == CurrentState.delay_end.value):
+           delay_type = ""
+         else:
+           delay_type =  data_dict["delay_type"]
          metrics.update_inferences(data_dict["inference_seconds"])
       except Exception as e:
          log.warning(f'Error inferring with data {data_dict}: {e}')
@@ -185,7 +190,7 @@ def ingest_loop(bucket, prefix, valkey_keys, data_dir):
       if len(files) == 0:
          num_no_updates += 1
          log.info(f"No new S3 keys to be processed")
-         time.sleep(20)
+         time.sleep(10)
          # if num_no_updates == 1:
          #    push_logs(valkey_keys["output_key"])
          continue
@@ -211,13 +216,12 @@ def ingest_data(bucket, prefix, run_id):
       valkey_keys = get_valkey_keys(prefix, run_id)
       log.debug(f"valkey_keys: {valkey_keys}")
       data_dir = setup_ingestion(prefix)
-      init_outputs(valkey_keys)
    except Exception as e:
       log.warning(f'Error with ingestion setup: {e}')
       trc = traceback.format_exc()
-      # cleanup(data_dir)
-      send_sos(prefix, bucket, run_id, trc, True)
-      # sys.exit(1)
+      cleanup(data_dir)
+      send_sos(prefix, bucket, run_id, trc, False)
+      sys.exit(1)
 
    #ingestion
    try:
@@ -225,20 +229,20 @@ def ingest_data(bucket, prefix, run_id):
    except Exception as e:
       log.warning(f'Error with ingestion loop: {e}')
       trc = traceback.format_exc()
-      # cleanup(data_dir)
-      send_sos(prefix, bucket, run_id, trc, True)
-      # sys.exit(1)
+      cleanup(data_dir)
+      send_sos(prefix, bucket, run_id, trc, False)
+      sys.exit(1)
 
    log.info(f'Ingestion stalled due to {STALLED} updates with no new files')
    cleanup(data_dir)
-   send_sos(prefix, bucket, run_id, "", True)
+   send_sos(prefix, bucket, run_id, "", False)
 
 if __name__ == '__main__':
    setup_logging()
    parser = argparse.ArgumentParser(description="postional args: bucket, prefix, run_id")
    parser.add_argument('bucket', help="s3 bucket name")
    parser.add_argument('prefix', help="s3 key prefix to check")
-   parser.add_argument('run_id', help="run_id to help keep data stored separately")
+   parser.add_argument('run_id', type=int, help="run_id to help keep data stored separately")
    args = parser.parse_args()
    log.info(f"Spawned ingestion with args: {args}")
    ingest_data(args.bucket, args.prefix, args.run_id)
