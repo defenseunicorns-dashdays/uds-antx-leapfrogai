@@ -45,6 +45,7 @@ class Metric(BaseModel):
 class PerformanceMetrics(BaseModel):
    timeToTranscribePerToken: Metric
    timeToInference: Metric
+   timeToDownload: Metric
 
 class Update(BaseModel):
    metadata: EventMetaData
@@ -61,14 +62,19 @@ class MetricTracker:
    def __init__(self):
       self.min_transcription = 9999999
       self.min_infer = 9999999
+      self.min_download = 9999999
       self.max_transcription = 0
       self.max_infer = 0
+      self.max_download = 0
       self.avg_transcription = 0
       self.avg_infer = 0
+      self.avg_download = 0
       self.num_tokens = 0
       self.num_inferences = 0
       self.total_transcribe_time = 0
       self.total_infer_time = 0
+      self.files_downloaded = 0
+      self.seconds_downloading = 0
 
    def get_transcription_metrics(self):
       data = {
@@ -85,6 +91,14 @@ class MetricTracker:
          "avg" : self.avg_infer
       }
       return data
+   
+   def get_download_metrics(self):
+      data = {
+         "min": self.min_download,
+         "max": self.max_download,
+         "avg": self.avg_download
+      }
+      return data
 
    def update_transcriptions(self, seconds, tokens):
       self.num_tokens += tokens
@@ -93,7 +107,17 @@ class MetricTracker:
          self.min_transcription = seconds
       if seconds > self.max_transcription:
          self.max_transcription = seconds
-      self.avg_transcription = self.total_transcribe_time / self.num_tokens
+      if self.num_tokens > 0:
+         self.avg_transcription = self.total_transcribe_time / self.num_tokens
+
+   def update_downloads(self, seconds):
+      self.files_downloaded += 1
+      self.seconds_downloading += seconds
+      if seconds < self.min_download:
+         self.min_download = seconds
+      if seconds > self.max_download:
+         self.max_download = seconds
+      self.avg_download = self.seconds_downloading / self.files_downloaded
 
    def update_inferences(self, seconds):
       self.num_inferences += 1

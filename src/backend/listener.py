@@ -1,10 +1,10 @@
-from comms.valkey import get_valkey_connection
+from comms.valkey import get_valkey_connection, wipe_key
 from util.logs import get_logger, setup_logging
 import os
 import json
 import traceback
 from subprocess import Popen
-from util.loaders import wipe_data
+from util.loaders import wipe_data, setup_metrics
 
 log = get_logger()
 
@@ -107,5 +107,7 @@ class Listener:
 
 if __name__ == '__main__':
    setup_logging()
+   wipe_key('1_metrics')
+   setup_metrics('1_metrics')
    listener = Listener()
    listener.run()
